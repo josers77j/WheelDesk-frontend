@@ -2,12 +2,16 @@
 
 An Angular 19 application for managing a tire workshop: products, stock locations, purchases, sales, quotations, documents, accounting reports and users. The interface uses Tailwind CSS and daisyUI and supports light/dark themes. The UI remains in Spanish. The backend's catalogs and invoice interpretation currently target El Salvador.
 
-This folder is an independent frontend project. The matching backend lives in `../back` in the local workspace; each folder can be published as its own repository. Sibling README links below refer to this local checkout; replace them with the matching repository URLs when publishing separately. Run all commands below from the frontend root. This project is licensed under AGPL-3.0-only; see [LICENSE](LICENSE).
+Use this application with the [WheelDesk backend](https://github.com/josers77j/WheelDesk-backend).
+
+Run all commands in this README from the frontend repository root unless stated otherwise.
+
+This project is licensed under [AGPL-3.0-only](LICENSE).
 
 ## Requirements before installation
 
 - Node.js **22.12 or newer in the Node 22 line** and pnpm **10.13.1**.
-- The matching backend installed, migrated, seeded and running. Follow its [README](../back/README.md) first. The backend setup uses Docker Compose for PostgreSQL and Floci; the frontend itself runs on the host.
+- The matching backend installed, migrated, seeded and running. Follow its [README](https://github.com/josers77j/WheelDesk-backend#readme) first. The backend setup uses Docker Compose for PostgreSQL and Floci; the frontend itself runs on the host.
 - A browser; Chrome/Chromium is also needed for headless unit tests. Optional Playwright browsers are installed separately for end-to-end tests.
 - Port `4200` available, with the backend allowing `http://localhost:4200` as `FRONTEND_BASE_URL`.
 
@@ -103,7 +107,7 @@ export const environment = {
 
 The default supplied URL points to localhost deliberately; replace it before production deployment. `pnpm run build` uses the production configuration. Changing a Cloudflare dashboard environment variable alone does **not** rewrite this TypeScript object; that would require an explicit build-time generation mechanism, which is not included.
 
-Configure the backend's `FRONTEND_BASE_URL` to your final frontend origin, such as `https://app.example.com`. Use HTTPS for both applications. Related subdomains (`app.example.com` and `api.example.com`) are preferable for cookie sessions; unrelated `pages.dev` and API Gateway domains can encounter browser cross-site-cookie restrictions. CORS and cookie storage are separate concerns. See the backend [deployment guide](../back/README.md#recommended-production-deployment-aws-lambda--http-api) for API Gateway, IAM, S3 and domain setup.
+Configure the backend's `FRONTEND_BASE_URL` to your final frontend origin, such as `https://app.example.com`. Use HTTPS for both applications. Related subdomains (`app.example.com` and `api.example.com`) are preferable for cookie sessions; unrelated `pages.dev` and API Gateway domains can encounter browser cross-site-cookie restrictions. CORS and cookie storage are separate concerns. See the backend [deployment guide](https://github.com/josers77j/WheelDesk-backend#recommended-production-deployment-aws-lambda--http-api) for API Gateway, IAM, S3 and domain setup.
 
 ### 2. Verify the release
 
