@@ -1,0 +1,101 @@
+<dialog id="revoke_sessions_modal" class="modal">
+  <div class="modal-box w-11/12 max-w-3xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+        <span class="icon-[ri--close-circle-fill] text-4xl"></span>
+      </button>
+    </form>
+
+    <div class="flex flex-col gap-6 mt-4">
+      <!-- Header -->
+      <div>
+        <h2 class="text-2xl font-semibold">Sesiones Activas</h2>
+        <p class="text-sm opacity-70">
+          Usuario: <span class="font-medium">{{ user().name }}</span>
+        </p>
+      </div>
+
+      <!-- Lista de sesiones -->
+      @if(hasSessions()){
+        <div class="space-y-3">
+          @for(token of tokens(); track token.id){
+            <div class="bg-base-200 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="icon-[tabler--device-desktop] text-lg opacity-60"></span>
+                  <span class="font-medium">{{ token.deviceType || 'Dispositivo' }}</span>
+                  @if (isCurrentSession(token)) {
+                    <span class="badge badge-info badge-sm">Esta sesión</span>
+                  }
+                </div>
+                <div class="flex items-center gap-1">
+                  @if (pendingRevokeId() === token.id) {
+                    <button
+                      class="btn btn-xs btn-error gap-1"
+                      [disabled]="revokingTokens().has(token.id)"
+                      (click)="onRevoke(token.id)"
+                      title="Confirmar revocación">
+                      @if(revokingTokens().has(token.id)){
+                        <span class="loading loading-spinner loading-xs"></span>
+                      } @else {
+                        <span class="icon-[material-symbols--logout] text-sm"></span>
+                      }
+                      <span class="hidden sm:inline">¿Confirmar?</span>
+                    </button>
+                    <button
+                      class="btn btn-xs btn-ghost"
+                      (click)="cancelRevoke()"
+                      title="Cancelar"
+                      aria-label="Cancelar">
+                      ✕
+                    </button>
+                  } @else {
+                    <button
+                      class="btn btn-xs btn-ghost btn-error gap-1"
+                      [disabled]="revokingTokens().has(token.id)"
+                      (click)="onRevoke(token.id)"
+                      title="Revocar sesión">
+                      @if(revokingTokens().has(token.id)){
+                        <span class="loading loading-spinner loading-xs"></span>
+                      } @else {
+                        <span class="icon-[material-symbols--logout] text-sm"></span>
+                      }
+                      <span class="hidden sm:inline">Revocar</span>
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div>
+                  <span class="opacity-60">User Agent: </span>
+                  <span class="wrap-break-words">{{ token.userAgent || '—' }}</span>
+                </div>
+                <div>
+                  <span class="opacity-60">IP: </span>
+                  <span>{{ token.ipAddress || '—' }}</span>
+                </div>
+                <div>
+                  <span class="opacity-60">Expira: </span>
+                  <span>{{ token.expiresAt | date:'short':'America/El_Salvador' }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="text-center py-8 opacity-60">
+          <span class="icon-[tabler--shield-check] text-4xl block mb-2"></span>
+          <p>No hay sesiones activas para este usuario</p>
+        </div>
+      }
+    </div>
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">Cerrar</button>
+      </form>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera">Cerrar</button></form>
+</dialog>

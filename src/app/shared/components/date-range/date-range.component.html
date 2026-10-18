@@ -1,0 +1,23 @@
+<div class="flex flex-col md:flex-row gap-3">
+  <label class="form-control w-full">
+    <span class="label-text mb-1">Desde</span>
+    <input
+      type="date"
+      class="input w-full"
+      aria-label="Desde"
+      [value]="fromSelected() ?? ''"
+      (change)="onDateChange('from', $event)"
+    />
+  </label>
+
+  <label class="form-control w-full">
+    <span class="label-text mb-1">Hasta</span>
+    <input
+      type="date"
+      class="input w-full"
+      aria-label="Hasta"
+      [value]="toSelected() ?? ''"
+      (change)="onDateChange('to', $event)"
+    />
+  </label>
+</div>

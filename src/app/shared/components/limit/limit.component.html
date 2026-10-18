@@ -1,0 +1,11 @@
+ <label class="select w-full">
+    <span class="label">Limite</span>
+    <select
+        #limitSelected
+        [value]="20"
+        (change)="outputLimit.emit(+limitSelected.value)">
+        @for (limit of limitList(); track $index) {
+        <option [value]="limit" [selected]="limit === limitInput()">{{ limit }}</option>
+        }
+    </select>
+</label>

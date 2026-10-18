@@ -1,0 +1,142 @@
+<app-title [titleDetail]="{ name: 'configuración de empresa' }" />
+
+<app-alert />
+
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5">
+  @if (companyQuery.isPending()) {
+    <div class="flex justify-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  } @else if (companyQuery.isError()) {
+    <div class="alert alert-error">
+      No se pudo cargar la configuración de la empresa.
+    </div>
+  } @else if (!companyId()) {
+    <div class="alert alert-warning">
+      No existe una configuración de empresa inicializada.
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <label class="fieldset md:col-span-3">
+        <span class="fieldset-legend">Razón social *</span>
+        <input class="input w-full" formControlName="legalName" />
+      </label>
+      <label class="fieldset md:col-span-3">
+        <span class="fieldset-legend">Nombre comercial</span>
+        <input class="input w-full" formControlName="tradeName" />
+      </label>
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">NIT *</span>
+        <input class="input w-full" formControlName="nit" />
+      </label>
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">NRC</span>
+        <input class="input w-full" formControlName="nrc" />
+      </label>
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Registro</span>
+        <input class="input w-full" formControlName="registryNo" />
+      </label>
+      <label class="fieldset md:col-span-6">
+        <span class="fieldset-legend">Dirección *</span>
+        <input class="input w-full" formControlName="address" />
+      </label>
+
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Departamento *</span>
+        <select
+          class="select w-full"
+          [value]="selectedDepartment()?.id ?? ''"
+          (change)="onDepartmentChange($event)">
+          <option value="">Seleccionar departamento</option>
+          @for (department of departmentsQuery.data() ?? []; track department.id) {
+            <option
+              [value]="department.id"
+              [selected]="department.id === selectedDepartment()?.id"
+            >
+              {{ department.name }}
+            </option>
+          }
+        </select>
+      </label>
+      <div class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Municipio *</span>
+        <app-combobox-form-control
+          placeholderInput="municipio"
+          [valuesResource]="municipalitiesQuery.data() ?? []"
+          [loading]="municipalitiesQuery.isLoading()"
+          [disable]="!selectedDepartment()"
+          [selectedValue]="selectedMunicipality()"
+          (valuesOutput)="setMunicipality($event)" />
+      </div>
+      <div class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Distrito *</span>
+        <app-combobox-form-control
+          placeholderInput="distrito"
+          [valuesResource]="districtsQuery.data() ?? []"
+          [loading]="districtsQuery.isLoading()"
+          [disable]="!selectedMunicipality()"
+          [selectedValue]="selectedDistrict()"
+          (valuesOutput)="setDistrict($event)" />
+      </div>
+
+      <div class="fieldset md:col-span-3">
+        <span class="fieldset-legend">Actividad económica *</span>
+        <app-combobox-form-control
+          placeholderInput="actividad económica"
+          [valuesResource]="economicActivitiesQuery.data() ?? []"
+          [loading]="economicActivitiesQuery.isLoading()"
+          [selectedValue]="selectedEconomicActivity()"
+          [isError]="!!form.controls.economicActivityId.errors"
+          (searchTextChange)="economicActivitySearch.set($event)"
+          (valuesOutput)="setEconomicActivity($event)" />
+      </div>
+      <label class="fieldset md:col-span-3">
+        <span class="fieldset-legend">Nombre del responsable</span>
+        <input class="input w-full" formControlName="responsableName" />
+      </label>
+      <label class="fieldset md:col-span-3">
+        <span class="fieldset-legend">Tipo de documento</span>
+        <select class="select w-full" formControlName="responsableDocTypeId">
+          <option [ngValue]="0">Seleccionar tipo de documento</option>
+          @for (type of taxDocumentTypesQuery.data() ?? []; track type.id) {
+            <option [ngValue]="type.id">{{ type.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="fieldset md:col-span-3">
+        <span class="fieldset-legend">Número de documento</span>
+        <input class="input w-full" formControlName="responsableDocNumber" />
+      </label>
+
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Teléfono</span>
+        <input class="input w-full" formControlName="phone" />
+      </label>
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Correo</span>
+        <input class="input w-full" type="email" formControlName="email" />
+      </label>
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">Sitio web</span>
+        <input class="input w-full" type="url" formControlName="website" />
+      </label>
+      <label class="fieldset md:col-span-2">
+        <span class="fieldset-legend">IVA</span>
+        <input class="input w-full" type="number" min="0" max="1" step="0.01" formControlName="ivaRate" />
+      </label>
+
+      <div class="md:col-span-6 flex justify-end">
+        <button
+          class="btn btn-primary"
+          type="submit"
+          [disabled]="isSaving() || !form.dirty">
+          @if (isSaving()) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          Guardar configuración
+        </button>
+      </div>
+    </form>
+  }
+</div>

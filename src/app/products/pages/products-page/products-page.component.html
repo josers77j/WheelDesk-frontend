@@ -1,0 +1,46 @@
+<!-- name of each tab group should be unique -->
+<div class="tabs tabs-box">
+  <input
+    type="radio"
+    name="my_tabs_4"
+    (click)="destroyIdSelected(); changeQueryParam(tabOptions.tire)"
+    [checked]="tabType() === tabOptions.tire"
+    class="tab text-xl"
+    aria-label="Llantas"
+  />
+
+  <div class="tab-content pt-5">
+    @if (tabType() === tabOptions.tire) {
+      <app-tire-tab></app-tire-tab>
+    }
+  </div>
+
+  <input
+    type="radio"
+    name="my_tabs_4"
+    (click)="destroyIdSelected(); changeQueryParam(tabOptions.service)"
+    [checked]="tabType() === tabOptions.service"
+    class="tab text-xl"
+    aria-label="Servicios"
+  />
+
+  <div class="tab-content pt-5">
+    @if (tabType() === tabOptions.service) {
+      <app-service-tab></app-service-tab>
+    }
+  </div>
+
+  <input
+    type="radio"
+    name="my_tabs_4"
+    (click)="destroyIdSelected(); changeQueryParam(tabOptions.supply)"
+    [checked]="tabType() === tabOptions.supply"
+    class="tab text-xl"
+    aria-label="Insumos"
+  />
+  <div class="tab-content pt-5">
+    @if (tabType() === tabOptions.supply) {
+      <app-supply-tab></app-supply-tab>
+    }
+  </div>
+</div>

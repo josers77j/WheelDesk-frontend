@@ -1,0 +1,27 @@
+<section class="space-y-5">
+  <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 border border-base-300"><h1 class="text-2xl font-bold">Reportes contables</h1><p class="text-sm text-base-content/60 mt-2">Selecciona el período y el contenido del ZIP.</p></div>
+  @if (loading()) { <div class="skeleton h-36 w-full" aria-label="Consultando período"></div> }
+  @else if (failed()) { <div class="alert alert-error">No se pudo consultar el período disponible.<button class="btn btn-sm" (click)="loadPeriod()">Reintentar</button></div> }
+  @else if (!period()?.firstDate) { <div class="bg-base-100 rounded-box p-6 border border-base-300">Todavía no hay facturas con documentos disponibles.</div> }
+  @else {
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 space-y-5 border border-base-300">
+      <fieldset [disabled]="busy()" class="space-y-5">
+        <div class="flex flex-wrap gap-2" role="group" aria-label="Seleccionar período"><button class="btn btn-sm" [class.btn-primary]="mode === 'month'" (click)="mode = 'month'; selectMonth()">Mes y año</button><button class="btn btn-sm" [class.btn-primary]="mode === 'range'" (click)="mode = 'range'">Rango de fechas</button></div>
+        @if (mode === 'month') {
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="flex flex-col gap-2">Año<select class="select select-bordered w-full" [(ngModel)]="year" (ngModelChange)="selectMonth()">@for (value of years; track value) { <option [ngValue]="value">{{value}}</option> }</select></label><label class="flex flex-col gap-2">Mes<select class="select select-bordered w-full" [(ngModel)]="month" (ngModelChange)="selectMonth()">@for (value of months; track value) { <option [ngValue]="value">{{monthNames[value-1]}}</option> }</select></label></div>
+        } @else {
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><label class="flex flex-col gap-2">Desde<input class="input input-bordered w-full" type="date" [(ngModel)]="from" [max]="period()?.today" /></label><label class="flex flex-col gap-2">Hasta<input class="input input-bordered w-full" type="date" [(ngModel)]="to" [max]="period()?.today" /></label></div>
+        }
+        <p class="text-sm text-base-content/60">{{from}} — {{to}}. Máximo 31 días, aunque el rango cruce dos meses.</p>
+        <h2 class="text-lg font-semibold">¿Qué necesitas descargar?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label class="flex items-start gap-3 border rounded-box p-4 cursor-pointer border-base-300" [class.border-primary]="formats.includes('pdf')" [class.bg-base-200]="formats.includes('pdf')"><input type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-1" [checked]="formats.includes('pdf')" (change)="toggleFormat('pdf')" /><span><strong class="flex items-center gap-2"><span class="icon-[tabler--file-type-pdf] text-lg"></span>Facturas PDF</strong><span class="block text-sm text-base-content/60 mt-2">Documentos para lectura y resguardo.</span></span></label>
+          <label class="flex items-start gap-3 border rounded-box p-4 cursor-pointer border-base-300" [class.border-primary]="formats.includes('json')" [class.bg-base-200]="formats.includes('json')"><input type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-1" [checked]="formats.includes('json')" (change)="toggleFormat('json')" /><span><strong class="flex items-center gap-2"><span class="icon-[tabler--code] text-lg"></span>Archivos JSON</strong><span class="block text-sm text-base-content/60 mt-2">Datos originales de las facturas.</span></span></label>
+          <label class="flex items-start gap-3 border rounded-box p-4 cursor-pointer border-base-300" [class.border-primary]="formats.includes('excel')" [class.bg-base-200]="formats.includes('excel')"><input type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-1" [checked]="formats.includes('excel')" (change)="toggleFormat('excel')" /><span><strong class="flex items-center gap-2"><span class="icon-[tabler--file-spreadsheet] text-lg"></span>Resumen Excel</strong><span class="block text-sm text-base-content/60 mt-2">Un único archivo con el resumen del período.</span></span></label>
+        </div>
+      </fieldset>
+      <div class="border border-dashed border-base-300 rounded-box bg-base-200/30 p-4"><h3 class="font-semibold mb-2">Contenido del ZIP</h3>@for (entry of packageEntries; track entry) { <p class="font-mono text-sm text-base-content/70">{{entry}}</p> } @empty { <p class="text-sm text-base-content/60">Selecciona al menos un formato.</p> }</div>
+      <button class="btn btn-primary" [disabled]="busy()" (click)="download()">@if (busy()) { <span class="loading loading-spinner loading-sm"></span> } @else { <span class="icon-[tabler--download] text-lg"></span> } {{busy() ? 'Preparando reporte' : 'Descargar ZIP'}}</button>
+    </div>
+  }
+</section>

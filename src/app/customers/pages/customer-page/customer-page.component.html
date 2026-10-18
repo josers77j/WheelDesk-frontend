@@ -1,0 +1,10 @@
+@if(customerResource.isLoading()){
+<app-form-skeleton></app-form-skeleton>
+}
+
+@if(customerResource.value()){
+
+<app-customer-detail-page
+  [customer]="customerResource.value()!"></app-customer-detail-page>
+
+}

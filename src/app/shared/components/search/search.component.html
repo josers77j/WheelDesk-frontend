@@ -1,0 +1,39 @@
+<div class="w-full" [class.join]="showButton()">
+    <label class="input w-full" [class.join-item]="showButton()">
+        <span class="icon-[jam--search] opacity-50"></span>
+        <input
+            #txtSearch
+            type="text"
+            placeholder="Término de búsqueda"
+            class="w-full"
+            (keyup.enter)="emitNow()"
+            (input)="onType(txtSearch.value)"
+            [value]="inputValue()"
+        />
+        @if (inputValue()) {
+            <button
+                type="button"
+                class="btn btn-xs btn-circle btn-ghost shrink-0"
+                (click)="clear()"
+                [disabled]="busy()"
+                aria-label="Limpiar búsqueda"
+            >
+                ✕
+            </button>
+        }
+    </label>
+    @if (showButton()) {
+    <button
+        class="btn btn-info join-item"
+        [disabled]="busy()"
+        (click)="emitNow()"
+    >
+        @if (busy()) {
+            <span class="loading loading-spinner loading-sm"></span>
+        } @else {
+            <span class="icon-[jam--search] text-2xl"></span>
+        }
+        Buscar
+    </button>
+    }
+</div>

@@ -1,0 +1,16 @@
+@if (alerts().length > 0) {
+  <div #alertOverlay popover="manual"
+    class="m-0 border-0 bg-transparent overflow-visible w-auto max-w-none max-h-none top-auto fixed z-50 animate-fadeIn bottom-20 inset-x-0 px-4
+    sm:right-6 sm:left-auto sm:px-0 flex flex-col gap-2 items-stretch sm:items-end">
+    @for (alert of alerts(); track alert.id) {
+      <div role="alert" class="alert shadow-xl w-full sm:w-90 flex flex-col items-stretch gap-2 text-left {{ alertStyle()[alert.type] }} {{ isLeaving(alert.id) ? 'animate-fadeOut' : 'animate-fadeIn' }}">
+        <div class="flex items-start justify-between gap-3 min-w-0">
+          <strong class="min-w-0 break-words">{{ alert.title || (alert.type === 'success' ? 'Operación completada' : alert.type === 'error' ? 'No se pudo completar' : 'Revisión necesaria') }}</strong>
+          <button type="button" class="btn btn-xs btn-circle btn-ghost shrink-0" (click)="dismiss(alert.id)" aria-label="Cerrar">✕</button>
+        </div>
+        @if (alert.message) { <p class="break-words whitespace-pre-line m-0">{{ alert.message }}</p> }
+        @if (alert.details?.length) { <ul class="list-disc pl-5 break-words">@for (detail of alert.details; track $index) { <li>{{ detail }}</li> }</ul> }
+      </div>
+    }
+  </div>
+}

@@ -1,0 +1,28 @@
+@if(productResource.isLoading()){
+<app-form-skeleton></app-form-skeleton>
+}
+
+@if(productResource.hasValue()){
+
+@if(productType() === PRODUCT_TYPE.TIRE){
+
+<app-tire-detail-page
+  [tire]="productResource.value()!"></app-tire-detail-page>
+
+}
+
+@if(productType() === PRODUCT_TYPE.SERVICE){
+<app-service-detail-page
+  [service]="productResource.value()!"></app-service-detail-page>
+
+}
+
+@if(productType() === PRODUCT_TYPE.SUPPLY){
+<app-supply-detail-page
+  [supply]="productResource.value()!"></app-supply-detail-page>
+}
+
+}
+@if(!productResource.hasValue()){
+<app-error-banner [errorBanner]="productError()"></app-error-banner>
+}

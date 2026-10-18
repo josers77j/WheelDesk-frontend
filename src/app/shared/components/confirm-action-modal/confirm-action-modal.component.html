@@ -1,0 +1,14 @@
+<dialog #confirmDialog class="modal" (cancel)="$event.preventDefault(); onCancel()">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">{{ title() }}</h3>
+    <p class="py-4 whitespace-pre-line">{{ message() }}</p>
+    <div class="modal-action">
+      <button class="btn" (click)="onCancel()">{{ cancelLabel() }}</button>
+      <button class="btn btn-warning" (click)="onConfirm()">
+        {{ confirmLabel() }}
+      </button>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="onCancel()">Cerrar</button></form>
+</dialog>

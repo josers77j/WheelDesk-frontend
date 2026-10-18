@@ -1,0 +1,76 @@
+ <div #anchor class="dropdown w-full block min-w-0 relative">
+
+    <!-- Input principal -->
+    <button
+        type="button"
+        class="input
+        input-bordered
+        w-full
+        pr-3
+        bg-base-100
+        flex
+        items-center
+        justify-between
+        cursor-pointer
+        min-w-0"
+
+        [class.border-error]="isError()"
+        (click)="onToggleClick()" (pointerup)="onTogglePointerUp()" [disabled]="disable()">
+        <span class="truncate flex-1 min-w-0 text-left" [class.pr-8]="!!displayValue()?.name && !disable()">
+            {{ displayValue()?.name?.slice(0, 25) || `Seleccionar ${placeholderInput()}` }}
+        </span>
+
+        <div class="flex items-center gap-2 shrink-0">
+
+
+            <span class="icon-[jam--chevron-down] text-2xl" aria-hidden="true"></span>
+        </div>
+    </button>
+    <button type="button" aria-label="Limpiar selección" [hidden]="!displayValue()?.name || disable()" [disabled]="disable()"
+      class="absolute right-10 top-1/2 -translate-y-1/2 flex items-center justify-center"
+      (click)="$event.stopPropagation(); setValue(null)">
+      <span class="icon-[jam--close] text-2xl cursor-pointer" aria-hidden="true"></span>
+    </button>
+
+    <div #panelHome class="contents"></div>
+
+    <!-- Dropdown (portaled al dialog/body al abrir: flota fuera del modal sin agrandarlo) -->
+    <div
+        #panel
+        tabindex="-1"
+        [hidden]="!isOpen()"
+        class="menu mt-1 rounded-lg border border-base-300 shadow-lg bg-base-100 p-2 gap-2">
+        <!-- Input de búsqueda -->
+
+        <input
+            #txtSearchText
+            type="text"
+            placeholder="Buscar..."
+            class="input input-sm input-bordered w-full bg-base-100"
+            (input)="onSearchInput(txtSearchText.value)"
+            [value]="searchText()" />
+
+        <!-- Resultados -->
+        <ul class="max-h-48 overflow-auto">
+
+            @for(value of valuesResource(); track value.id){
+            <li>
+                <a role="button" tabindex="0"
+                    (keydown.enter)="$event.preventDefault(); $event.stopPropagation(); setValue(value); resetCombobox()"
+                    (keydown.space)="$event.preventDefault(); $event.stopPropagation(); setValue(value); resetCombobox()"
+                    (pointerdown)="$event.preventDefault(); $event.stopPropagation(); setValue(value)"
+                    (click)="$event.stopPropagation()"
+                    class="block px-3 py-2 rounded-field hover:bg-base-300 cursor-pointer">
+                    {{displayName(value.name)}}
+                </a>
+            </li>
+            }@empty {
+            <li>
+                <span class="loading loading-spinner loading-lg p-2" [hidden]="!(loading() || isSearching())"></span>
+                <p [hidden]="loading() || isSearching()">No hay registros</p>
+            </li>
+            }
+
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,18 @@
+<section class="card bg-base-100 border border-base-300 mb-5 p-1">
+    <div
+        class="card-body p-4 md:p-6 flex-col lg:flex-row lg:items-center lg:justify-between gap-5"
+    >
+        <div>
+            <h1 class="text-2xl font-bold">
+                Listado de {{ titleDetail().name }}
+            </h1>
+            <p class="text-sm text-base-content/60 mt-1">
+                Total de {{ titleDetail().name }}
+                <span class="font-semibold text-primary">{{
+                    titleDetail().count
+                }}</span>
+            </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3"><ng-content /></div>
+    </div>
+</section>

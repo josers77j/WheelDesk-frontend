@@ -1,0 +1,173 @@
+<dialog #formModal id="supply_modal" class="modal modal-middle">
+  <div class="modal-box w-11/12 max-w-3xl mx-auto max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between pb-3 border-b border-base-content/10">
+      <div class="flex items-center gap-2">
+        <span
+          [class]="isEditing() ? 'icon-[akar-icons--edit]' : 'icon-[gridicons--create]'"
+          class="text-2xl text-primary"></span>
+        <h3 class="text-xl font-bold">
+          {{ isEditing() ? 'Editar Insumo' : 'Nuevo Insumo' }}
+        </h3>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-circle btn-ghost"
+        [disabled]="isSubmitting()"
+        (click)="closeModal()">
+        ✕
+      </button>
+    </div>
+
+    <form [formGroup]="supplyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-4">
+      <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Nombre del producto <span class="text-error">*</span></legend>
+            <input
+              type="text"
+              class="input w-full"
+              placeholder="Nombre descriptivo del producto"
+              [class.input-error]="draftMode() && !!supplyForm.get('name')?.invalid && !!supplyForm.get('name')?.touched" formControlName="name" />
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('name')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Marca del producto <span class="text-error">*</span></legend>
+            @if (draftMode()) { <p class="input w-full flex items-center">{{ draftBrandName() }}</p> } @else { <app-combobox-form-control
+              (click)="brandTouched.set(true)"
+              (valuesOutput)="setBrand($event)"
+              (searchTextChange)="brandComboboxOutput.set($event); brandTouched.set(true)"
+              [placeholderInput]="placeholderInput().brand"
+              [valuesResource]="brandsQuery.data() ?? []"
+              [loading]="brandsQuery.isLoading()"
+              [isError]="!!supplyForm.get('brandId')?.errors"
+              [selectedValue]="selectedBrand()"></app-combobox-form-control> }
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('brandId')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Proveedor del producto</legend>
+            <app-combobox-form-control
+              (click)="providerTouched.set(true)"
+              (valuesOutput)="setProvider($event)"
+              (searchTextChange)="providerComboboxOutput.set($event); providerTouched.set(true)"
+              [placeholderInput]="placeholderInput().provider"
+              [valuesResource]="providersQuery.data() ?? []"
+              [loading]="providersQuery.isLoading()"
+              [selectedValue]="selectedProvider()"></app-combobox-form-control>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Precio de compra @if (!draftMode()) { <span class="text-error">*</span> } @else { <span class="font-normal text-base-content/60">(opcional)</span> }</legend>
+            <input
+              type="number"
+              class="input w-full"
+              placeholder="Asignar precio de compra"
+              [class.input-error]="draftMode() && !!supplyForm.get('purchasePrice')?.invalid && !!supplyForm.get('purchasePrice')?.touched" formControlName="purchasePrice" />
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('purchasePrice')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Precio de venta <span class="text-error">*</span></legend>
+            <input
+              type="number"
+              class="input w-full"
+              placeholder="Asignar precio de venta"
+              [class.input-error]="draftMode() && !!supplyForm.get('salePrice')?.invalid && !!supplyForm.get('salePrice')?.touched" formControlName="salePrice" />
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('salePrice')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Notas del producto</legend>
+            <textarea
+              class="textarea h-24 w-full"
+              placeholder="Redactar una descripción de este producto"
+              formControlName="notes"></textarea>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Tipo de impuesto</legend>
+            <select class="select w-full" [class.select-error]="draftMode() && !!supplyForm.get('taxType')?.invalid && !!supplyForm.get('taxType')?.touched" formControlName="taxType">
+              <option value="">Seleccionar</option>
+              <option value="TAXABLE">Gravado (IVA)</option>
+              <option value="EXEMPT">Exento</option>
+              <option value="NON_TAXABLE">No sujeto</option>
+            </select>
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('taxType')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Tipo de ítem <span class="text-error">*</span></legend>
+            <select
+              class="select w-full"
+              [class.select-error]="draftMode() && !!supplyForm.get('itemTypeCatalogId')?.invalid && !!supplyForm.get('itemTypeCatalogId')?.touched" formControlName="itemTypeCatalogId"
+               [disabled]="isSubmitting()">
+              <option [ngValue]="0">Seleccionar tipo</option>
+              @for (itemType of itemTypesQuery.data() ?? []; track itemType.id) {
+                <option [ngValue]="itemType.id">{{ itemType.name }}</option>
+              }
+            </select>
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('itemTypeCatalogId')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Unidad de medida <span class="text-error">*</span></legend>
+            <app-combobox-form-control
+              (click)="unitTouched.set(true)"
+              (valuesOutput)="setUnitOfMeasure($event)"
+              (searchTextChange)="unitSearch.set($event); unitTouched.set(true)"
+              [placeholderInput]="'Unidad de medida'"
+              [valuesResource]="unitOfMeasuresQuery.data() ?? []"
+              [loading]="unitOfMeasuresQuery.isLoading()"
+              [isError]="!!supplyForm.get('unitOfMeasureCatalogId')?.errors"
+              [selectedValue]="selectedUnitOfMeasure()"
+              [disable]="isSubmitting()"></app-combobox-form-control>
+          </fieldset>
+          <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null" [control]="supplyForm.get('unitOfMeasureCatalogId')!"></app-form-error-label>
+        </div>
+      </div>
+
+      <div class="modal-action flex justify-end gap-2 pt-4 border-t border-base-content/10">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          [disabled]="isSubmitting()"
+          (click)="closeModal()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+           [disabled]="isSubmitting() || (isEditing() && !hasChanges())">
+           @if (isSubmitting()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Guardando...</span>
+          } @else {
+            <span class="icon-[tabler--device-floppy] text-xl"></span>
+            <span>{{ draftMode() ? 'Usar en la compra' : isEditing() ? 'Actualizar' : 'Guardar' }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button type="button" [disabled]="isSubmitting()" (click)="closeModal()">Cerrar</button>
+  </form>
+</dialog>

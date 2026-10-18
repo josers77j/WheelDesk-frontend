@@ -1,0 +1,110 @@
+<dialog #approveModal class="modal" (cancel)="$event.preventDefault(); closeModal()">
+  <div class="modal-box w-11/12 max-w-5xl">
+    <h3 class="text-lg font-bold">Aprobar orden #{{ order()?.documentNumber }}</h3>
+    <div class="flex flex-wrap gap-2 mt-2 text-sm">
+      <span class="badge badge-ghost">Proveedor: {{ order()?.provider?.name }}</span>
+      <span class="badge badge-ghost">{{ lines().length }} líneas</span>
+      <span class="badge badge-ghost">Total: {{ order()?.total | currency }}</span>
+    </div>
+    <p class="py-4">
+      Asigne a qué zona ingresará cada producto. La suma de cada línea debe ser
+      exacta: si desea cambiar cantidades, modifique la orden.
+    </p>
+
+    @for (line of lines(); track line.detailId; let li = $index) {
+      <div class="collapse collapse-arrow border border-base-300 bg-base-100 mb-2">
+        <input type="radio" name="approve-lines" [checked]="li === 0" />
+        <div class="collapse-title font-medium flex items-center gap-2 flex-wrap">
+          <span class="badge badge-primary badge-sm font-bold">#{{ li + 1 }}</span>
+          <span>{{ line.productName }}</span>
+          <span class="text-sm opacity-70">x{{ line.quantity }}</span>
+          @if (line.suggestedZoneName) {
+            <span class="badge badge-ghost badge-sm">{{ line.suggestedZoneName }}</span>
+          } @else {
+            <span class="badge badge-warning badge-sm">Sin zona: debe asignarla</span>
+          }
+          @if (lineValid(line)) {
+            <span class="badge badge-success badge-sm">OK</span>
+          } @else {
+            <span class="badge badge-error badge-sm">
+              Asignado {{ lineAllocated(line) }}/{{ line.quantity }}
+            </span>
+          }
+        </div>
+        <div class="collapse-content">
+          @for (row of line.allocations; track $index; let ri = $index) {
+            <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end mb-2">
+              <div class="flex-1">
+                <app-combobox-form-control
+                  (click)="onWarehouseFocus(li, ri)"
+                  (valuesOutput)="setAllocationWarehouse(li, ri, $event)"
+                  (searchTextChange)="warehouseComboboxOutput.set($event); onWarehouseFocus(li, ri)"
+                  [placeholderInput]="'bodega'"
+                  [valuesResource]="warehousesQuery.data() ?? []"
+                  [loading]="warehousesQuery.isLoading()"
+                  [selectedValue]="row.warehouse"></app-combobox-form-control>
+              </div>
+              <div class="flex-1">
+                <app-combobox-form-control
+                  (click)="onZoneFocus(li, ri)"
+                  (valuesOutput)="setAllocationZone(li, ri, $event)"
+                  (searchTextChange)="zoneComboboxOutput.set($event); onZoneFocus(li, ri)"
+                  [placeholderInput]="'zona'"
+                  [valuesResource]="filteredZoneOptions()"
+                  [loading]="zonesQuery.isLoading()"
+                  [disable]="!row.warehouse"
+                  [selectedValue]="row.zone"></app-combobox-form-control>
+              </div>
+              <label class="form-control w-full sm:w-32">
+                <span class="label-text text-xs">Cantidad</span>
+                <input
+                  type="number"
+                  class="input input-bordered w-full"
+                  min="1"
+                  [max]="line.quantity"
+                  [ngModel]="row.quantity"
+                  (ngModelChange)="setAllocationQuantity(li, ri, $event)" />
+              </label>
+              @if (line.allocations.length > 1) {
+                <button
+                  type="button"
+                  class="btn btn-xs btn-ghost btn-error"
+                  (click)="removeAllocation(li, ri)">
+                  <span class="icon-[streamline--delete-1-solid]"></span>
+                </button>
+              }
+            </div>
+          }
+          <button
+            type="button"
+            class="btn btn-xs btn-success"
+            (click)="addAllocation(li)">
+            + Agregar zona
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn" type="button" (click)="closeModal()">Cancelar</button>
+      </form>
+      <button
+        class="btn btn-success"
+        [disabled]="!allValid() || mutationApprove.isPending()"
+        (click)="onConfirmApprove()">
+        <span
+          class="loading loading-spinner loading-lg"
+          [hidden]="!mutationApprove.isPending()"></span>
+        Confirmar aprobación
+      </button>
+    </div>
+  </div>
+  <app-confirm-action-modal
+    title="Aprobar orden"
+    [message]="approveSummaryMessage()"
+    confirmLabel="Aprobar"
+    (confirmed)="onApproveConfirmed()" />
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="closeModal()">Cerrar</button></form>
+</dialog>

@@ -1,0 +1,47 @@
+
+
+<div class="overflow-x-auto">
+
+  <table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 min-w-max">
+    <!-- head -->
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nombre</th>
+        <th class="max-w-72">Descripción</th>
+        <th>Fecha de creación</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows  -->
+      @for(brand of brands; track brand.id; ){
+      <tr (click)="changeRowSelectedStatus(brand.id)"
+        [class.bg-gray-800]="brand.id === this.brandService.brandIdSelected()"
+        [class.text-white]="brand.id === this.brandService.brandIdSelected()"
+
+        class="transition-all ease-in delay-50 cursor-pointer">
+
+        <th id>{{ rowOffset + $index + 1 }}</th>
+
+        <td>{{brand.name}}</td>
+        <td class="max-w-72 whitespace-normal wrap-break-word">{{brand.description}}</td>
+        <td>{{brand.createdAt | date}}</td>
+      </tr>
+      }
+      <!-- empty -->
+      @empty {
+      @if(isLoading){
+      <tr>
+        <td colspan="99"><app-skeleton [limit]="skeletonLimit"></app-skeleton></td>
+      </tr>
+      } @else {
+      <tr>
+        <th>No hay registros</th>
+      </tr>
+      }
+      }
+
+    </tbody>
+  </table>
+</div>

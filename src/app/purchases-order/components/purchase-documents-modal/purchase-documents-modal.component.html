@@ -1,0 +1,25 @@
+<dialog #dialog class="modal" (cancel)="$event.preventDefault(); close()">
+  <section class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-2xl max-h-[88dvh] overflow-auto">
+    <header class="flex items-start justify-between gap-3"><div><h2 class="font-semibold text-xl">{{ bulk() ? 'Descargar documentos de compras' : 'Documentos originales de compra' }}</h2><p class="text-sm text-base-content/60 mt-1">{{ bulk() ? ids().length + ' compras seleccionadas · ZIP sin Excel' : 'Visualización, descarga y envío de PDF o JSON adjuntos.' }}</p></div><button type="button" class="btn btn-ghost btn-sm btn-circle" aria-label="Cerrar documentos" [disabled]="!!busy()" (click)="close()">✕</button></header>
+    @if (busy() === 'loading') { <p class="py-6" role="status"><span class="loading loading-spinner loading-sm"></span>Consultando documentos…</p> }
+    @else {
+      @if (!available().pdf && !available().json) { <div class="alert mt-5">Esta compra no tiene documentos originales disponibles.</div> }
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
+        @for (format of ['pdf', 'json']; track format) {
+          @if (format === 'pdf' || format === 'json') {
+            <section class="border border-base-content/20 rounded-box p-4 min-w-0"><label class="flex items-center gap-3"><input class="checkbox checkbox-primary" type="checkbox" [checked]="selected()[format]" [disabled]="!!busy() || !available()[format]" (change)="selectionChanged(format, $event)" /><strong>{{ format.toUpperCase() }} original</strong></label>
+              @if (!bulk()) { <p class="text-xs text-base-content/60 mt-2">{{ available()[format] ? 'Archivo adjunto del proveedor' : 'Sin adjunto' }}</p><div class="flex flex-wrap gap-2 mt-3"><button type="button" class="btn btn-sm" [disabled]="!!busy() || !available()[format]" (click)="preview(format)"><span class="icon-[tabler--eye]"></span>Ver</button><button type="button" class="btn btn-sm" [disabled]="!!busy() || !available()[format]" (click)="download(format)"><span class="icon-[tabler--download]"></span>Descargar</button></div> }
+            </section>
+          }
+        }
+      </div>
+      <p class="text-xs text-base-content/60 mt-3">El ZIP organiza los originales en una carpeta por compra. Si falta un archivo solicitado, incluye un listado de documentos no disponibles.</p>
+      <button type="button" class="btn btn-primary mt-4 w-full sm:w-auto" [disabled]="!!busy() || !formats().length" (click)="downloadZip()">@if (busy() === 'zip') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--file-zip]"></span>Descargar ZIP</button>
+      @if (!bulk()) { <section class="border-t border-base-content/15 mt-6 pt-4"><h3 class="font-semibold">Enviar por correo</h3><p class="text-sm text-base-content/60 mt-1">Se enviarán únicamente los formatos seleccionados al destinatario indicado.</p><label class="fieldset mt-3"><span class="fieldset-legend">Correo del destinatario *</span><input type="email" class="input w-full" [formControl]="recipient" [readOnly]="!!busy()" maxlength="254" placeholder="destinatario@ejemplo.com" [class.input-error]="recipient.touched && recipient.invalid" /></label>@if (recipient.touched && recipient.invalid) { <p class="text-error text-xs" role="alert">Ingrese un correo válido.</p> }<button type="button" class="btn btn-primary mt-3 w-full sm:w-auto" [disabled]="!!busy() || recipient.invalid || !formats().length" (click)="sendEmail()">@if (busy() === 'email') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--mail]"></span>Enviar documentos</button></section> }
+    }
+    @if (busy() && busy() !== 'loading') { <p role="status" class="text-sm mt-4"><span class="loading loading-spinner loading-xs"></span>Procesando solicitud…</p> }
+  </section>
+  <form method="dialog" class="modal-backdrop"><button type="button" [disabled]="!!busy()" (click)="close()" aria-label="Cerrar documentos al tocar fuera">Cerrar</button></form>
+</dialog>
+<app-pdf-preview />
+<dialog #jsonDialog class="modal"><section class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-4xl"><header class="flex justify-between gap-3"><h2 class="font-semibold">JSON original</h2><form method="dialog"><button class="btn btn-sm btn-circle btn-ghost" aria-label="Cerrar JSON">✕</button></form></header><pre class="mt-4 p-4 bg-base-200 rounded-box max-h-[65dvh] overflow-auto text-xs">{{ jsonText() }}</pre></section><form method="dialog" class="modal-backdrop"><button aria-label="Cerrar JSON al tocar fuera">Cerrar</button></form></dialog>

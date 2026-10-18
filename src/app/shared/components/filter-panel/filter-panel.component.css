@@ -1,0 +1,36 @@
+/* Scope projected field layouts to this panel without changing global form styles. */
+.filter-panel { container-type: inline-size; }
+.filter-panel .filter-panel-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; padding: 20px 24px; }
+.filter-panel .filter-panel-main.filter-panel-no-search { align-items: center; }
+.filter-panel .filter-panel-fields { padding: 20px 24px; }
+.filter-panel .filter-panel-expansion { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 250ms ease-in-out, opacity 250ms ease-in-out; }
+.filter-panel .filter-panel-expansion.filter-panel-expanded { grid-template-rows: 1fr; opacity: 1; }
+.filter-panel .filter-panel-expansion[hidden] { display: none; }
+.filter-panel .filter-panel-clip { min-height: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .filter-panel .filter-panel-expansion { transition: none; }
+}
+.filter-panel .filter-panel-actions { padding: 14px 24px; }
+.filter-panel [filterActions] { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; padding: 4px; }
+.filter-panel [filterFields] { display: flex; flex-wrap: wrap; align-items: start; gap: 24px; padding: 4px; }
+.filter-panel .filter-group { flex: 1 1 260px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.filter-panel .filter-group--compact { flex: 0.7 1 160px; }
+.filter-panel .filter-group--wide { flex: 1.5 1 360px; }
+.filter-panel .filter-group > legend { font-size: 12px; font-weight: 600; margin-bottom: 12px; padding: 0; }
+.filter-panel .filter-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.filter-panel .filter-label { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.filter-panel .filter-label > span:not(.input) { font-size: 12px; opacity: 0.7; }
+@container (max-width: 700px) {
+  .filter-panel .filter-panel-main { padding: 16px; gap: 10px; }
+  .filter-panel .filter-panel-fields, .filter-panel .filter-panel-actions { padding: 16px; }
+  .filter-panel .filter-pair { grid-template-columns: minmax(0, 1fr); }
+  .filter-panel .filter-group { flex-basis: 100%; }
+}
+@container (max-width: 480px) {
+  .filter-panel [filterActions] { flex-direction: column; }
+  .filter-panel [filterActions] .btn { width: 100%; }
+  .filter-panel .filter-panel-main:not(.filter-panel-no-search) { grid-template-columns: minmax(0, 1fr); }
+  .filter-panel .filter-panel-main > .btn { justify-self: end; }
+}
+
+.filter-panel app-date-range .label-text { display: block; font-size: 12px; opacity: 0.7; }

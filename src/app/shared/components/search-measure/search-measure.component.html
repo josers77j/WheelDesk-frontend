@@ -1,0 +1,42 @@
+ <div class="flex items-end w-full">
+    <div class="join w-full">
+        <label class="input join-item flex items-center gap-1 px-2 w-full">
+            <input
+                #txtWidth
+                class="flex-1 text-center"
+                type="text"
+                inputmode="number"
+                maxLength="3"
+                placeholder="205"
+                (input)="onWidthChange(txtWidth.value)"
+                [value]="widthValue()" />
+            <span class="opacity-50 shrink-0">/</span>
+            <input
+                #txtHeight
+                class="flex-1 text-center"
+                type="text"
+                inputmode="number"
+                maxLength="3"
+                placeholder="55"
+                (input)="onHeightChange(txtHeight.value)"
+                [value]="heightValue()" />
+            <span class="opacity-50 shrink-0">/</span>
+            <input
+                #txtRim
+                class="flex-1 text-center"
+                type="text"
+                inputmode="number"
+                maxLength="3"
+                placeholder="16"
+                (input)="onRimChange(txtRim.value)"
+                [value]="rimValue()" />
+            @if (widthValue() || heightValue() || rimValue()) {
+              <button
+                type="button"
+                class="btn btn-xs btn-circle btn-ghost shrink-0"
+                (click)="clear()"
+                aria-label="Limpiar medidas">✕</button>
+            }
+        </label>
+    </div>
+</div>

@@ -1,0 +1,145 @@
+<dialog #formModal id="service_modal" class="modal modal-middle">
+  <div class="modal-box w-11/12 max-w-2xl mx-auto">
+    <div class="flex items-center justify-between pb-3 border-b border-base-content/10">
+      <div class="flex items-center gap-2">
+        <span
+          [class]="isEditing() ? 'icon-[akar-icons--edit]' : 'icon-[gridicons--create]'"
+          class="text-2xl text-primary"></span>
+        <h3 class="text-xl font-bold">
+          {{ isEditing() ? 'Editar Servicio' : 'Nuevo Servicio' }}
+        </h3>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-circle btn-ghost"
+        [disabled]="isSubmitting()"
+        (click)="closeModal()">
+        ✕
+      </button>
+    </div>
+
+    <form [formGroup]="serviceForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-4">
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Nombre del producto <span class="text-error">*</span>
+          </legend>
+          <input
+            type="text"
+            class="input w-full"
+            placeholder="Nombre descriptivo del producto"
+            formControlName="name" />
+        </fieldset>
+        <app-form-error-label [control]="serviceForm.get('name')!"></app-form-error-label>
+      </div>
+
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Precio de venta
+          </legend>
+          <input
+            type="number"
+            class="input w-full"
+            inputmode="decimal"
+            pattern="[0-9]*[.,]?[0-9]*"
+            placeholder="Asignar precio de venta"
+            formControlName="salePrice" />
+        </fieldset>
+        <app-form-error-label [control]="serviceForm.get('salePrice')!"></app-form-error-label>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Tipo de impuesto
+          </legend>
+          <select class="select w-full" formControlName="taxType">
+            <option value="">Seleccionar</option>
+            <option value="TAXABLE">Gravado (IVA)</option>
+            <option value="EXEMPT">Exento</option>
+            <option value="NON_TAXABLE">No sujeto</option>
+          </select>
+        </fieldset>
+        <app-form-error-label [control]="serviceForm.get('taxType')!"></app-form-error-label>
+      </div>
+
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Tipo de ítem <span class="text-error">*</span>
+          </legend>
+          <select
+            class="select w-full"
+            formControlName="itemTypeCatalogId"
+            [disabled]="isSubmitting()">
+            <option [ngValue]="0">Seleccionar tipo</option>
+            @for (itemType of itemTypesQuery.data() ?? []; track itemType.id) {
+              <option [ngValue]="itemType.id">{{ itemType.name }}</option>
+            }
+          </select>
+        </fieldset>
+        <app-form-error-label [control]="serviceForm.get('itemTypeCatalogId')!"></app-form-error-label>
+      </div>
+      </div>
+
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Unidad de medida <span class="text-error">*</span>
+          </legend>
+          <app-combobox-form-control
+            (click)="unitTouched.set(true)"
+            (valuesOutput)="setUnitOfMeasure($event)"
+            (searchTextChange)="unitSearch.set($event); unitTouched.set(true)"
+            [placeholderInput]="'Unidad de medida'"
+            [valuesResource]="unitOfMeasuresQuery.data() ?? []"
+            [loading]="unitOfMeasuresQuery.isLoading()"
+            [isError]="!!serviceForm.get('unitOfMeasureCatalogId')?.errors"
+            [selectedValue]="selectedUnitOfMeasure()"
+            [disable]="isSubmitting()"></app-combobox-form-control>
+        </fieldset>
+        <app-form-error-label [control]="serviceForm.get('unitOfMeasureCatalogId')!"></app-form-error-label>
+      </div>
+
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Notas del producto
+          </legend>
+          <textarea
+            class="textarea h-24 w-full"
+            placeholder="Redactar una descripción de este producto"
+            formControlName="notes"></textarea>
+        </fieldset>
+      </div>
+
+      <div class="modal-action flex justify-end gap-2 pt-4 border-t border-base-content/10">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          [disabled]="isSubmitting()"
+          (click)="closeModal()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+           [disabled]="isSubmitting() || (isEditing() && !hasChanges())">
+           @if (isSubmitting()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Guardando...</span>
+          } @else {
+            <span class="icon-[tabler--device-floppy] text-xl"></span>
+            <span>{{ isEditing() ? 'Actualizar' : 'Guardar' }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button type="button" [disabled]="isSubmitting()" (click)="closeModal()">Cerrar</button>
+  </form>
+</dialog>

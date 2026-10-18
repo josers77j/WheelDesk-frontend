@@ -1,0 +1,58 @@
+<div class="overflow-x-auto">
+
+  <table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 min-w-max">
+    <!-- head -->
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nombre</th>
+        <th>Tipo de cliente</th>
+        <th>Dirección</th>
+        <th>Es Contribuyente</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows  -->
+      @for(customer of customers(); track customer.id; ){
+      <tr (click)="changeRowSelectedStatus(customer.id)"
+        [class.bg-gray-800]="customer.id === this.CustomerService.customerIdSelected()"
+        [class.text-white]="customer.id === this.CustomerService.customerIdSelected()"
+
+        class="transition-all ease-in delay-50 cursor-pointer">
+
+        <th id>{{ rowOffset() + $index + 1 }}</th>
+
+        <td>
+          <span class="inline-flex items-center gap-1">
+            {{customer.name}}
+            @if (missingFields(customer); as missing) {
+              @if (missing.length > 0) {
+                <div class="tooltip" [attr.data-tip]="'Faltan: ' + missing.join(', ')">
+                  <span class="icon-[tabler--alert-triangle] text-warning text-lg"></span>
+                </div>
+              }
+            }
+          </span>
+        </td>
+        <td>{{customer.customerType! | CustomerType}}</td>
+        <td>{{customer.address}}</td>
+        <td>{{customer.isTaxPayer | TaxPayer}}</td>
+      </tr>
+      }
+      <!-- empty -->
+      @empty {
+      @if(isLoading()){
+      <tr>
+        <td colspan="99"><app-skeleton [limit]="skeletonLimit()"></app-skeleton></td>
+      </tr>
+      } @else {
+      <tr>
+        <th>No hay registros</th>
+      </tr>
+      }
+      }
+
+    </tbody>
+  </table>
+</div>

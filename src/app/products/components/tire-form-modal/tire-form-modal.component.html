@@ -1,0 +1,510 @@
+<dialog #formModal id="tire_modal" class="modal modal-middle">
+  <div
+    class="modal-box w-11/12 md:max-w-5xl mx-auto max-h-[90vh] overflow-y-auto border"
+  >
+    <div
+      class="flex items-center justify-between pb-3 border-b border-base-content/10"
+    >
+      <div class="flex items-center gap-2">
+        <span
+          [class]="
+            isEditing() ? 'icon-[akar-icons--edit]' : 'icon-[gridicons--create]'
+          "
+          class="text-2xl text-primary"
+        ></span>
+        <h3 class="text-xl font-bold">
+          {{ draftMode() ? "Preparar llanta para la compra" : isEditing() ? "Editar Llanta" : "Nueva Llanta" }}
+        </h3>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-circle btn-ghost"
+        [disabled]="isSubmitting()"
+        (click)="closeModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <form
+      [formGroup]="tireForm"
+      (ngSubmit)="onSubmit()"
+      class="flex flex-col gap-4 mt-4"
+    >
+      <!-- ===== SECCIÓN 1: DATOS REQUERIDOS ===== -->
+      <div class="border border-base-300 rounded-lg p-4 bg-base-100">
+        <h4
+          class="text-lg font-semibold text-primary mb-4 flex items-center gap-2"
+        >
+          <span
+            class="icon-[heroicons-outline--check-circle] text-primary"
+          ></span>
+          Datos Requeridos
+        </h4>
+        <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Marca del producto <span class="text-error">*</span>
+              </legend>
+              @if (draftMode()) { <p class="input w-full flex items-center">{{ draftBrandName() }}</p> } @else {
+              <app-combobox-form-control
+                (click)="brandTouched.set(true)"
+                (valuesOutput)="setBrand($event)"
+                (searchTextChange)="
+                  brandComboboxOutput.set($event); brandTouched.set(true)
+                "
+                [placeholderInput]="placeholderInput().brand"
+                [valuesResource]="brandsQuery.data() ?? []"
+                [loading]="brandsQuery.isLoading()"
+                [isError]="!!tireForm.get('brandId')?.errors"
+                [selectedValue]="selectedBrand()"
+              ></app-combobox-form-control>
+              }
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('brandId')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Precio de compra @if (!draftMode()) { <span class="text-error">*</span> } @else { <span class="font-normal text-base-content/60">(opcional)</span> }
+              </legend>
+              <input
+                type="number"
+                class="input w-full"
+                placeholder="Asignar precio de compra"
+                [class.input-error]="draftMode() && !!tireForm.get('purchasePrice')?.invalid && !!tireForm.get('purchasePrice')?.touched" formControlName="purchasePrice"
+              />
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('purchasePrice')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Precio de venta <span class="text-error">*</span>
+              </legend>
+              <input
+                type="number"
+                class="input w-full"
+                placeholder="Asignar precio de venta"
+                [class.input-error]="draftMode() && !!tireForm.get('salePrice')?.invalid && !!tireForm.get('salePrice')?.touched" formControlName="salePrice"
+              />
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('salePrice')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Estado de la llanta <span class="text-error">*</span>
+              </legend>
+              <div class="flex flex-wrap gap-2">
+                @for (
+                  tireCondition of tireConditionList();
+                  track tireCondition.title
+                ) {
+                  <input
+                    class="btn btn-dash"
+                    type="radio"
+                    name="tireCondition"
+                    [attr.aria-label]="tireCondition.title"
+                    [value]="tireCondition.value"
+                    formControlName="tireCondition"
+                  />
+                }
+              </div>
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('tireCondition')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Calidad <span class="text-error">*</span>
+              </legend>
+              <div class="flex flex-wrap gap-2">
+                @for (
+                  tireQuality of tireQualityList();
+                  track tireQuality.value
+                ) {
+                  <input
+                    class="btn btn-dash"
+                    type="radio"
+                    name="tireQuality"
+                    [attr.aria-label]="tireQuality.title"
+                    [value]="tireQuality.value"
+                    formControlName="tireQuality"
+                  />
+                }
+              </div>
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('tireQuality')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Ancho de la llanta <span class="text-error">*</span>
+              </legend>
+              <input
+                type="number"
+                class="input w-full"
+                inputmode="number"
+                placeholder="Anchura (mm)"
+                [class.input-error]="draftMode() && !!tireForm.get('width')?.invalid && !!tireForm.get('width')?.touched" formControlName="width"
+                (input)="restrictMeasureDigits(tireForm.get('width'), $event)"
+              />
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('width')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Perfil</legend>
+              <input
+                type="number"
+                class="input w-full"
+                inputmode="number"
+                placeholder="Perfil"
+                [class.input-error]="draftMode() && !!tireForm.get('aspectRatio')?.invalid && !!tireForm.get('aspectRatio')?.touched" formControlName="aspectRatio"
+                (input)="
+                  restrictMeasureDigits(tireForm.get('aspectRatio'), $event)
+                "
+              />
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('aspectRatio')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Diámetro de rin <span class="text-error">*</span>
+              </legend>
+              <input
+                type="number"
+                class="input w-full"
+                inputmode="decimal"
+                step="0.5"
+                placeholder="Rin (ej. 17 o 17.5)"
+                [class.input-error]="draftMode() && !!tireForm.get('rimDiameter')?.invalid && !!tireForm.get('rimDiameter')?.touched" formControlName="rimDiameter"
+                (input)="
+                  restrictMeasureDigits(tireForm.get('rimDiameter'), $event)
+                "
+              />
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('rimDiameter')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Construcción <span class="text-error">*</span>
+              </legend>
+              <div class="flex flex-wrap gap-2">
+                @for (
+                  construction of constructionList();
+                  track construction.value
+                ) {
+                  <label
+                    class="btn"
+                    [class.btn-primary]="
+                      tireForm.get('construction')?.value === construction.value
+                    "
+                  >
+                    <input
+                      type="radio"
+                      name="construction"
+                      [value]="construction.value"
+                      formControlName="construction"
+                      class="hidden peer"
+                    />
+                    <span>{{ construction.title }}</span>
+                  </label>
+                }
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Tipo de ítem (Catálogo) <span class="text-error">*</span>
+              </legend>
+              <select class="select w-full" [class.select-error]="draftMode() && !!tireForm.get('itemTypeCatalogId')?.invalid && !!tireForm.get('itemTypeCatalogId')?.touched" formControlName="itemTypeCatalogId">
+                <option [ngValue]="0">Seleccionar tipo</option>
+                @for (
+                  itemType of itemTypesQuery.data() ?? [];
+                  track itemType.id
+                ) {
+                  <option [ngValue]="itemType.id">{{ itemType.name }}</option>
+                }
+              </select>
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('itemTypeCatalogId')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Unidad de medida (Catálogo) <span class="text-error">*</span>
+              </legend>
+              <app-combobox-form-control
+                (click)="unitTouched.set(true)"
+                (valuesOutput)="setUnitOfMeasure($event)"
+                (searchTextChange)="
+                  unitOfMeasureComboboxOutput.set($event); unitTouched.set(true)
+                "
+                [placeholderInput]="'unidad de medida'"
+                [valuesResource]="unitOfMeasuresQuery.data() ?? []"
+                [loading]="unitOfMeasuresQuery.isLoading()"
+                [isError]="!!tireForm.get('unitOfMeasureCatalogId')?.errors"
+                [selectedValue]="selectedUnitOfMeasure()"
+              ></app-combobox-form-control>
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('unitOfMeasureCatalogId')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Tipos de vehículo <span class="text-error">*</span>
+              </legend>
+              <div class="flex flex-wrap gap-2">
+                @if (vehicleTypesQuery.data()?.length) {
+                  @for (vt of vehicleTypesQuery.data() ?? []; track vt.id) {
+                    <label
+                      class="badge gap-1.5 cursor-pointer"
+                      [class.badge-primary]="
+                        selectedVehicleTypes().includes(vt.id)
+                      "
+                    >
+                      <input
+                        type="checkbox"
+                        [checked]="selectedVehicleTypes().includes(vt.id)"
+                        (change)="toggleVehicleType(vt.id)"
+                        class="hidden peer"
+                      />
+                      <span>{{ vt.name }}</span>
+                      <span
+                        class="icon-[tabler--check] peer-checked:inline hidden"
+                      ></span>
+                    </label>
+                  }
+                } @else {
+                  @for (id of selectedVehicleTypes(); track id) {
+                    <label class="badge badge-primary gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked
+                        disabled
+                        class="hidden peer"
+                      />
+                      <span>ID: {{ id }}</span>
+                      <span class="icon-[tabler--check] inline hidden"></span>
+                    </label>
+                  }
+                  @if (!selectedVehicleTypes().length) {
+                    <div class="text-xs opacity-60">Cargando tipos...</div>
+                  }
+                }
+              </div>
+            </fieldset>
+            <app-form-error-label [requiredText]="draftMode() ? '* Obligatorio' : null"
+              [control]="tireForm.get('vehicleTypeId')!"
+            ></app-form-error-label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SECCIÓN 2: DATOS OPCIONALES ===== -->
+      <details class="collapse collapse-arrow border border-base-300 rounded-lg bg-base-100" [open]="optionalExpanded()" (toggle)="onOptionalToggle($event)">
+        <summary class="collapse-title text-lg font-semibold text-info">Datos opcionales</summary>
+        <div class="collapse-content">
+        <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Proveedor del producto</legend>
+              <app-combobox-form-control
+                (click)="providerTouched.set(true)"
+                (valuesOutput)="setProvider($event)"
+                (searchTextChange)="
+                  providerComboboxOutput.set($event); providerTouched.set(true)
+                "
+                [placeholderInput]="placeholderInput().provider"
+                [valuesResource]="providersQuery.data() ?? []"
+                [loading]="providersQuery.isLoading()"
+                [selectedValue]="selectedProvider()"
+              ></app-combobox-form-control>
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Notas del producto</legend>
+              <textarea
+                class="textarea h-24 w-full"
+                placeholder="Redactar una descripción de este producto"
+                formControlName="notes"
+              ></textarea>
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Prefijo</legend>
+              <div class="flex flex-wrap gap-2">
+                @for (prefix of prefixList(); track prefix.value) {
+                  <label
+                    class="btn btn-dash"
+                    [class.btn-primary]="
+                      tireForm.get('prefix')?.value === prefix.value
+                    "
+                  >
+                    <input
+                      type="radio"
+                      name="prefix"
+                      [value]="prefix.value"
+                      formControlName="prefix"
+                      class="hidden peer"
+                    />
+                    <span>{{ prefix.title }}</span>
+                  </label>
+                }
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Rango de carga</legend>
+              <select class="select w-full" [class.select-error]="draftMode() && !!tireForm.get('loadRange')?.invalid && !!tireForm.get('loadRange')?.touched" formControlName="loadRange">
+                @for (loadRange of loadRangeList(); track loadRange.title) {
+                  <option [value]="loadRange.value">
+                    {{ loadRange.title }}
+                  </option>
+                }
+              </select>
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Índice de carga frontal</legend>
+              <input
+                type="number"
+                class="input w-full"
+                inputmode="numeric"
+                placeholder="91"
+                [class.input-error]="draftMode() && !!tireForm.get('loadIndexFront')?.invalid && !!tireForm.get('loadIndexFront')?.touched" formControlName="loadIndexFront"
+                (input)="
+                  restrictMeasureDigits(tireForm.get('loadIndexFront'), $event)
+                "
+              />
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Índice de carga trasero</legend>
+              <input
+                type="number"
+                class="input w-full"
+                inputmode="numeric"
+                placeholder="Solo si es dual"
+                [class.input-error]="draftMode() && !!tireForm.get('loadIndexRear')?.invalid && !!tireForm.get('loadIndexRear')?.touched" formControlName="loadIndexRear"
+                (input)="
+                  restrictMeasureDigits(tireForm.get('loadIndexRear'), $event)
+                "
+              />
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Rating de velocidad</legend>
+              <select class="select w-full" [class.select-error]="draftMode() && !!tireForm.get('speedRating')?.invalid && !!tireForm.get('speedRating')?.touched" formControlName="speedRating">
+                @for (
+                  speedRating of speedRatingList();
+                  track speedRating.title
+                ) {
+                  <option [value]="speedRating.value">
+                    {{ speedRating.title }}
+                  </option>
+                }
+              </select>
+            </fieldset>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Lonas</legend>
+              <input
+                type="text"
+                class="input w-full"
+                inputmode="number"
+                maxLength="2"
+                placeholder="4"
+                [class.input-error]="draftMode() && !!tireForm.get('plies')?.invalid && !!tireForm.get('plies')?.touched" formControlName="plies"
+              />
+            </fieldset>
+          </div>
+        </div>
+        </div>
+      </details>
+
+      <div
+        class="modal-action flex justify-end gap-2 pt-4 border-t border-base-content/10"
+      >
+        <button
+          type="button"
+          class="btn btn-ghost"
+          [disabled]="isSubmitting()"
+          (click)="closeModal()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="isSubmitting() || (isEditing() && !hasChanges())"
+        >
+          @if (isSubmitting()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Guardando...</span>
+          } @else {
+            <span class="icon-[tabler--device-floppy] text-xl"></span>
+            <span>{{ draftMode() ? "Usar en la compra" : isEditing() ? "Actualizar" : "Guardar" }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button type="button" [disabled]="isSubmitting()" (click)="closeModal()">
+      Cerrar
+    </button>
+  </form>
+</dialog>

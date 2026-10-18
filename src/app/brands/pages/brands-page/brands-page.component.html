@@ -1,0 +1,129 @@
+<app-title [titleDetail]="titleData()"
+  ><button class="btn btn-success w-full sm:w-auto" (click)="openCreateModal()">
+    <span class="icon-[tabler--plus] text-2xl"></span>
+    Crear nuevo registro
+  </button></app-title
+>
+
+<!-- Card: controles de paginación y filtros -->
+<app-filter-panel heading="Consultar registros">
+<div filterSearch><div class="filter-label"><span>Buscar por nombre</span><app-search #listSearch [showButton]="false"
+        [busy]="brandsQuery.isFetching()"
+        class="w-full"
+        (outputParam)="onSearch($event)"
+        [initialValue]="query()"
+      ></app-search></div></div>
+<div filterActions><button type="button" class="btn btn-primary" (click)="listSearch.emitNow()" [disabled]="brandsQuery.isFetching()"><span class="icon-[tabler--search] text-lg" aria-hidden="true"></span>Buscar</button><button type="button" class="btn btn-warning" (click)="listSearch.resetInput(); onResetFilters()" [disabled]="brandsQuery.isFetching()"><span class="icon-[tabler--x] text-lg" aria-hidden="true"></span>Limpiar</button></div>
+</app-filter-panel>
+
+<!-- Card: registros -->
+<div class="bg-base-100 rounded-box border border-base-300 p-4 md:p-6 mb-5">
+  <div class="flex flex-col gap-4 p-1">
+    <app-pagination
+      [currentPage]="brandsQuery.data()?.meta?.page ?? 0"
+      [totalPages]="brandsQuery.data()?.meta?.totalPages!"
+      [totalItems]="brandsQuery.data()?.meta?.total ?? 0"
+      [pageSize]="brandsQuery.data()?.meta?.limit ?? 0"
+    ><app-limit paginationLimit
+      class="w-full sm:w-48"
+      [limitInput]="limitPerPage()"
+      (outputLimit)="onNewLimit($event)"
+    /></app-pagination>
+
+    <!-- Error banner -->
+    @if (brandsQuery.error()) {
+      <app-error-banner
+        [errorBanner]="{
+          message: 'Ocurrió un error inesperado',
+          error: brandsQuery.error()?.name ?? 'Verifique los logs del servidor',
+        }"
+      ></app-error-banner>
+    }
+
+    <app-brand-table
+      [brands]="brandsQuery.data()?.data ?? []"
+      [isLoading]="brandsQuery.isLoading()"
+      [skeletonLimit]="limitPerPage()"
+      [rowOffset]="
+        ((brandsQuery.data()?.meta?.page ?? 1) - 1) *
+        (brandsQuery.data()?.meta?.limit ?? 0)
+      "
+    ></app-brand-table>
+
+    <app-pagination
+      [currentPage]="brandsQuery.data()?.meta?.page ?? 0"
+      [totalPages]="brandsQuery.data()?.meta?.totalPages!"
+      [totalItems]="brandsQuery.data()?.meta?.total ?? 0"
+      [pageSize]="brandsQuery.data()?.meta?.limit ?? 0"
+    ></app-pagination>
+  </div>
+</div>
+
+@if (idSelected() > 0) {
+  <!-- Floating Action Bar Contextual -->
+  <div
+    class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn"
+  >
+    <!-- Info del registro seleccionado -->
+    <div
+      class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1"
+    >
+      <span class="badge badge-primary badge-sm font-bold"
+        >#{{ selectedRowNumber() }}</span
+      >
+    </div>
+
+    <!-- Botón Vista Previa -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="my_modal_3.showModal()"
+      title="Vista Previa"
+      aria-label="Vista Previa"
+    >
+      <span class="icon-[tabler--eye] text-xl sm:text-lg text-primary"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Ver</span>
+    </button>
+
+    <!-- Botón Modificar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="openEditModal()"
+      title="Modificar"
+      aria-label="Modificar"
+    >
+      <span class="icon-[tabler--edit] text-xl sm:text-lg text-info"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+    </button>
+
+    <!-- Botón Eliminar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="my_modal_1.showModal()"
+      title="Eliminar"
+      aria-label="Eliminar"
+    >
+      <span class="icon-[tabler--trash] text-xl sm:text-lg text-error"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Remover</span>
+    </button>
+
+    <!-- Botón Deseleccionar / Cerrar -->
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="brandService.brandIdSelected.set(0)"
+      title="Deseleccionar"
+      aria-label="Deseleccionar"
+    >
+      ✕
+    </button>
+  </div>
+
+  <app-quick-view [brand]="brand()"></app-quick-view>
+}
+
+<app-delete-action-modal></app-delete-action-modal>
+<app-brand-form-modal
+  #brandFormModal
+  (saved)="onBrandSaved()"
+></app-brand-form-modal>
+
+<app-alert />

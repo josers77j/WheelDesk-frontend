@@ -1,0 +1,281 @@
+<app-alert />
+
+@if (!unlocked()) {
+  <div class="bg-base-100 rounded-box shadow-lg p-6 md:p-8 max-w-xl mx-auto mt-8 border border-base-300">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="icon-[tabler--lock] text-3xl text-warning"></span>
+      <div>
+        <h2 class="text-2xl font-semibold">Zona protegida</h2>
+        <p class="text-sm opacity-70">Ingresa la contraseña para habilitar la importación de facturas.</p>
+      </div>
+    </div>
+    <label class="input w-full">
+      <span class="label">Contraseña de acceso</span>
+      <input
+        type="password"
+        class="input w-full"
+        autocomplete="current-password"
+        [value]="unlockPassword()"
+        (input)="unlockPassword.set($any($event.target).value)"
+        (keydown.enter)="unlock()" />
+    </label>
+    @if (unlockError()) {
+      <p class="text-sm text-error mt-2">{{ unlockError() }}</p>
+    }
+    <button
+      type="button"
+      class="btn btn-warning w-full mt-4"
+      [disabled]="unlocking() || !unlockPassword()"
+      (click)="unlock()">
+      @if (unlocking()) {
+        <span class="loading loading-spinner loading-sm"></span>
+      }
+      Desbloquear
+    </button>
+    <p class="text-xs opacity-60 mt-3">La protección se cierra automáticamente después de 15 minutos sin actividad.</p>
+  </div>
+} @else {
+
+<app-title [titleDetail]="{ name: 'importación de facturas', count: files().length }" />
+
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <div>
+      <h2 class="text-lg font-semibold">Verificar facturas importadas</h2>
+      <p class="text-sm opacity-70">
+        Comprueba que cada factura importada conserve su PDF y JSON originales.
+      </p>
+    </div>
+    <button
+      class="btn btn-info flex-1 sm:flex-none"
+      (click)="verifyFiles()"
+      [disabled]="verifying()"
+    >
+      @if (verifying()) {
+        <span class="loading loading-spinner loading-sm"></span>
+      } @else {
+        <span class="icon-[tabler--file-check] text-xl"></span>
+      }
+      Verificar
+    </button>
+  </div>
+  @if (verifyResult(); as result) {
+    <p class="text-sm mb-2">
+      <strong>{{ result.complete }}/{{ result.total }}</strong> facturas completas.
+    </p>
+    @if (result.missing.length > 0) {
+      <div class="overflow-x-auto">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Control</th>
+              <th>Cliente</th>
+              <th>Falta</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of result.missing; track row.generationCode) {
+              <tr>
+                <td class="font-mono text-xs">{{ row.controlNumber }}</td>
+                <td>{{ row.customerName }}</td>
+                <td>
+                  @if (row.missingPdf) {
+                    <span class="badge badge-warning badge-sm">PDF</span>
+                  }
+                  @if (row.missingJson) {
+                    <span class="badge badge-error badge-sm">JSON</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+       <p class="text-sm text-success">No falta ningún archivo.</p>
+    }
+  }
+</div>
+
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h2 class="text-lg font-semibold">Preparar importación</h2>
+        <p class="text-sm opacity-70">
+          Selecciona PDF y JSON. Cada PDF o JSON debe pesar como máximo 512 KB. Los documentos se envían por lotes sin separar sus archivos; se vinculan por nombre o código de generación.
+        </p>
+      </div>
+      <div>
+        <input
+          #fileInput
+          type="file"
+          accept=".json,.pdf,application/json,application/pdf"
+          multiple
+          class="hidden"
+          (change)="onFilesSelected($event)" />
+        <button class="btn btn-info" (click)="fileInput.click()" [disabled]="importing() || previewing()">
+          <span class="text-lg leading-none">+</span>
+          Seleccionar archivos
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="border-2 border-dashed rounded-lg p-6 text-center text-sm opacity-70 border-base-300"
+      [class.border-primary]="isDragging()"
+      [class.opacity-100]="isDragging()"
+      (dragover)="$event.preventDefault(); isDragging.set(true)"
+      (dragleave)="isDragging.set(false)"
+      (drop)="onDrop($event)">
+      @if (previewing()) {
+        <span class="loading loading-spinner loading-sm"></span>
+         <span> Revisando archivos...</span>
+      } @else {
+         Arrastra tus archivos PDF y JSON aquí o usa el botón para seleccionarlos
+      }
+    </div>
+
+    @if (previewing()) {
+      <app-skeleton [limit]="5" />
+    } @else if (files().length > 0 || pdfCount > 0) {
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          class="btn btn-success"
+          (click)="startImport()"
+          [disabled]="importing() || (readyCount === 0 && pdfCount === 0)">
+          @if (importing()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Importando...</span>
+          } @else if (readyCount > 0) {
+             <span>Importar {{ readyCount }} archivos</span>
+          } @else {
+            <span>Adjuntar {{ pdfCount }} PDFs</span>
+          }
+        </button>
+        @if (selectedFiles().length > 0) {
+          <button
+            class="btn btn-error btn-sm"
+            (click)="removeSelected()"
+            [disabled]="importing() || importInterrupted()">
+            Quitar ({{ selectedFiles().length }})
+          </button>
+        }
+
+        @if (importing()) {
+          <div class="flex items-center gap-2 w-full" role="status">
+            <span class="loading loading-spinner loading-sm"></span>
+            <span class="text-sm">Procesando lote {{ completedBatches() + 1 }} de {{ totalBatches() }}…</span>
+          </div>
+        }
+      </div>
+      @if (files().length > 0) {
+      <div class="overflow-x-auto">
+        <table class="table table-sm w-full">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm"
+                  [checked]="selectedFiles().length === files().length && files().length > 0"
+                  (change)="toggleSelectAll()"
+                  title="Seleccionar todos"
+                  aria-label="Seleccionar todos" />
+              </th>
+              <th>Archivo</th>
+              <th>PDF</th>
+               <th>Versión / tipo</th>
+               <th>N.º de control</th>
+               <th>Fecha de emisión</th>
+               <th>Validación</th>
+              <th>Cliente</th>
+               <th class="text-right">Productos</th>
+               <th class="text-right">Nuevos</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of files(); track f.filename) {
+              <tr class="hover:bg-base-300">
+                <td>
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm"
+                    [checked]="selectedFiles().includes(f.filename)"
+                    (change)="toggleSelect(f.filename)"
+                    title="Seleccionar"
+                    aria-label="Seleccionar archivo" />
+                </td>
+                <td class="max-w-48 truncate" [title]="f.filename">{{ f.filename }}</td>
+                <td>
+                  @if (f.hasPdf) {
+                     <span class="badge badge-sm badge-success">disponible</span>
+                   } @else {
+                     <span class="badge badge-sm badge-warning" title="Falta el PDF">pendiente</span>
+                  }
+                </td>
+                <td class="whitespace-nowrap">v{{ f.version ?? '?' }} · {{ f.tipoDte ?? '?' }}</td>
+                <td class="whitespace-nowrap">{{ f.controlNumber ?? '—' }}</td>
+                <td class="whitespace-nowrap">{{ f.fecEmi ?? '—' }}</td>
+                <td>
+                  @if (f.sello) {
+                    <span class="badge badge-sm badge-success">sí</span>
+                  } @else {
+                    <span class="badge badge-sm badge-error">no</span>
+                  }
+                </td>
+                <td>
+                  <span
+                    class="badge badge-sm"
+                    [class.badge-ghost]="f.customer.mode === 'generic'"
+                    [class.badge-info]="f.customer.mode === 'match'"
+                    [class.badge-warning]="f.customer.mode === 'create'">
+                    {{ f.customer.mode === 'generic' ? 'genérico' : f.customer.mode === 'match' ? 'existe' : 'se crea' }}
+                  </span>
+                </td>
+                <td class="text-right">{{ f.items.length }}</td>
+                <td class="text-right">{{ createCount(f) }}</td>
+                <td>
+                  @if (f.errors.length > 0) {
+                    <span class="badge badge-sm badge-error" [title]="f.errors.join('; ')">error</span>
+                  } @else if (f.duplicate) {
+                    <span class="badge badge-sm badge-warning">duplicado</span>
+                  } @else {
+                    <span class="badge badge-sm badge-success">listo</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    }
+
+    @if (importSummary(); as summary) {
+      <div role="status">
+        <h3 class="font-semibold mb-2">Resumen de importación</h3>
+        <p>{{ summary.migrated }} importadas · {{ summary.skipped }} omitidas · {{ summary.failed }} fallidas</p>
+        <p>{{ completedBatches() }} de {{ totalBatches() }} lotes confirmados.</p>
+        @if (!importing()) { <button class="btn btn-info btn-sm" (click)="newImport()">Nueva importación</button> }
+      </div>
+    }
+    @if (importInterrupted()) {
+      <div class="alert alert-warning">La importación está interrumpida. El último lote no tiene resultado confirmado.
+        <button class="btn btn-sm" (click)="startImport()" [disabled]="importing()">Reintentar pendientes</button>
+      </div>
+    }
+    @if (importErrors().length > 0 && !errorsDismissed()) {
+      <div class="alert alert-error">
+        <ul>
+          @for (error of importErrors(); track $index) {
+            <li>{{ error.filename }} — {{ error.detail }}</li>
+          }
+        </ul>
+        <button class="btn btn-xs btn-ghost" (click)="errorsDismissed.set(true)" aria-label="Ocultar incidencias">✕</button>
+      </div>
+    }
+  </div>
+</div>
+}

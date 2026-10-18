@@ -1,0 +1,62 @@
+<dialog #activityDialog id="sale_order_activity" class="modal" (close)="isOpen.set(false)">
+  <div class="modal-box w-11/12 max-w-2xl">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+        <span class="icon-[ri--close-circle-fill] text-4xl"></span>
+      </button>
+    </form>
+
+    <div class="flex flex-col gap-4 mt-4">
+      <div>
+        <h2 class="text-2xl font-semibold">Actividad</h2>
+        <p class="text-sm opacity-70 font-medium">
+          Orden {{ orderNumber() }}
+
+        </p>
+      </div>
+
+      @if (auditQuery.isLoading()) {
+        <div class="flex flex-col gap-2">
+          <div class="skeleton h-16 w-full"></div>
+          <div class="skeleton h-16 w-full"></div>
+        </div>
+      } @else if (auditQuery.error()) {
+        <p class="opacity-60">No se pudo cargar la actividad.</p>
+      } @else if (timeline().length === 0) {
+        <p class="opacity-60">Esta orden aún no tiene actividad registrada.</p>
+      } @else {
+        <ul class="flex flex-col gap-2 max-h-96 overflow-auto">
+          @for (item of timeline(); track $index) {
+            <li class="bg-base-200 rounded-lg p-3 flex flex-col gap-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                @if (item.ok === true) {
+                  <span class="badge badge-sm badge-success">Éxito</span>
+                } @else if (item.ok === false) {
+                  <span class="badge badge-sm badge-error">Error</span>
+                } @else {
+                  <span class="badge badge-sm badge-info">Auditoría</span>
+                }
+                <span class="font-medium">{{ item.title }}</span>
+                <span class="opacity-60 text-sm">· {{ item.at | date: 'medium' : 'America/El_Salvador' }}</span>
+              </div>
+              @if (item.extra) {
+                <p class="text-sm opacity-70">{{ item.extra }}</p>
+              }
+              @if (item.detail) {
+                <p class="text-sm">{{ item.detail }}</p>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="modal-action">
+        <form method="dialog" class="flex gap-2">
+          <button class="btn">Cerrar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera">Cerrar</button></form>
+</dialog>

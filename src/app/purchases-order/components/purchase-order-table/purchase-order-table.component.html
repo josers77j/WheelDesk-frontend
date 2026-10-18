@@ -1,0 +1,59 @@
+
+<div class="overflow-x-auto">
+
+  <table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 min-w-max cursor-pointer">
+    <!-- head -->
+    <thead>
+      <tr>
+        <th><span class="sr-only">Seleccionar documentos</span></th>
+        <th>#</th>
+        <th>documento</th>
+        <th>Proveedor</th>
+        <th>Costo total</th>
+        <th>Fecha de creación</th>
+        <th>Estado de la orden</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows  -->
+      @for(purchaseOrder of purchaseOrder(); track purchaseOrder.id; ){
+      <tr (click)="changeRowSelectedStatus(purchaseOrder.id)"
+        [class.bg-gray-800]="purchaseOrder.id === this.PurchaseOrderService.selectedPurchaseOrderId()"
+        [class.text-white]="purchaseOrder.id === this.PurchaseOrderService.selectedPurchaseOrderId()"
+
+        class="transition-all ease-in delay-50 cursor-pointer">
+
+        <td (click)="$event.stopPropagation()"><input type="checkbox" class="checkbox checkbox-sm checkbox-primary" [checked]="checkedIds().includes(purchaseOrder.id)" [attr.aria-label]="'Seleccionar compra ' + purchaseOrder.documentNumber" (change)="toggleChecked(purchaseOrder.id, $event)" /></td>
+        <td class="font-medium">{{ rowOffset() + $index + 1 }}</td>
+        <td>{{purchaseOrder.documentNumber | CorrelativeParse}} </td>
+        <td>{{purchaseOrder.provider.name}}</td>
+        <td>{{purchaseOrder.total | currency}}</td>
+        <td>{{purchaseOrder.createdAt | date:'longDate':'America/El_Salvador'}}</td>
+        <td>
+          <span
+            class="badge"
+            [class.badge-success]="purchaseOrder.status === purchaseOrderStatus.COMPLETED"
+            [class.badge-error]="purchaseOrder.status === purchaseOrderStatus.REJECTED"
+            [class.badge-warning]="purchaseOrder.status === purchaseOrderStatus.PENDING">
+            {{purchaseOrder.status | PurchaseOrderStatus }}
+          </span>
+        </td>
+
+      </tr>
+      }
+      <!-- empty -->
+      @empty {
+      @if(isLoading()){
+      <tr>
+        <td colspan="99"><app-skeleton [limit]="skeletonLimit()"></app-skeleton></td>
+      </tr>
+      } @else {
+      <tr>
+        <th>No hay registros</th>
+      </tr>
+      }
+      }
+
+    </tbody>
+  </table>
+</div>

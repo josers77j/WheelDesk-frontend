@@ -1,0 +1,20 @@
+<div class="hero bg-base-200 min-h-screen">
+  <div class="hero-content flex-col">
+    <div class="text-center">
+      <!-- <h1 class="text-5xl font-bold">Autenticación</h1> -->
+    </div>
+    @if (this.themeService.logo(); as logo) {
+      <img [src]="logo" [alt]="this.themeService.appName" class="h-18 w-86 object-contain" />
+    } @else {
+      <span class="text-xl font-semibold">{{ this.themeService.appName }}</span>
+    }
+
+    <div class="card bg-base-100 w-full shrink-0 shadow-2xl">
+      <div class="card-body">
+        <fieldset class="fieldset">
+          <router-outlet></router-outlet>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+</div>

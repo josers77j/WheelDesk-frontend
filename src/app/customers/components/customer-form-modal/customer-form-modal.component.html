@@ -1,0 +1,436 @@
+<dialog #formModal id="customer_modal" class="modal modal-middle">
+  <div class="modal-box w-11/12 max-w-3xl mx-auto max-h-[90vh] overflow-y-auto">
+    <!-- Header -->
+    <div
+      class="flex items-center justify-between pb-3 border-b border-base-content/10"
+    >
+      <div class="flex items-center gap-2">
+        <span
+          [class]="
+            isEditing() ? 'icon-[akar-icons--edit]' : 'icon-[gridicons--create]'
+          "
+          class="text-2xl text-primary"
+        ></span>
+        <h3 class="text-xl font-bold">
+          {{ isEditing() ? "Editar Cliente" : "Nuevo Cliente" }}
+        </h3>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-circle btn-ghost"
+        [disabled]="isSubmitting()"
+        (click)="closeModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Steps -->
+    <ul class="steps steps-horizontal w-full mt-4">
+      <li class="step" [class.step-primary]="currentStep() >= 1">Datos</li>
+      @if (isTaxPayerOn()) {
+        <li class="step" [class.step-primary]="currentStep() >= 2">Fiscal</li>
+      }
+    </ul>
+
+    <!-- Form -->
+    <form
+      [formGroup]="customerForm"
+      (ngSubmit)="onSubmit()"
+      class="flex flex-col gap-4 mt-4"
+    >
+      @if (currentStep() === 1) {
+        <div
+          class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6 animate-fadeIn"
+        >
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Nombre <span class="text-error">*</span>
+              </legend>
+              <input
+                type="text"
+                class="input w-full"
+                placeholder="Nombre del cliente"
+                formControlName="name"
+                [class.input-error]="
+                  customerForm.get('name')?.invalid &&
+                  customerForm.get('name')?.touched
+                "
+              />
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('name')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Correo
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <input
+                type="text"
+                class="input w-full"
+                placeholder="ejemplo@gmail.com"
+                formControlName="email"
+                [class.input-error]="
+                  customerForm.get('email')?.invalid &&
+                  customerForm.get('email')?.touched
+                "
+              />
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('email')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Tipo de cliente
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <div
+                class="flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-label="Tipo de cliente"
+              >
+                <label
+                  class="btn flex-1 cursor-pointer"
+                  [class.btn-primary]="
+                    customerForm.get('customerType')?.value ===
+                    customerType.NATURAL
+                  "
+                >
+                  <input
+                    class="sr-only"
+                    type="radio"
+                    name="customerType"
+                    formControlName="customerType"
+                    [value]="customerType.NATURAL"
+                  />
+                  Natural
+                </label>
+                <label
+                  class="btn flex-1 cursor-pointer"
+                  [class.btn-primary]="
+                    customerForm.get('customerType')?.value ===
+                    customerType.LEGAL
+                  "
+                >
+                  <input
+                    class="sr-only"
+                    type="radio"
+                    name="customerType"
+                    formControlName="customerType"
+                    [value]="customerType.LEGAL"
+                  />
+                  Jurídico
+                </label>
+              </div>
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('customerType')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-4">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Teléfono
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <app-phone-input formControlName="phone"></app-phone-input>
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('phone')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Tipo de contribuyente</legend>
+              <label class="label gap-3">
+                <input
+                  type="checkbox"
+                  class="toggle toggle-success"
+                  [checked]="isTaxPayerOn()"
+                  [disabled]="taxPayerRequired()"
+                  (change)="onTaxPayerToggle($event)"
+                />
+                <span class="label-text">
+                  {{ isTaxPayerOn() ? "Contribuyente" : "No contribuyente" }}
+                </span>
+              </label>
+            </fieldset>
+          </div>
+
+          <!-- Department combobox -->
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Departamento
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <select
+                class="select w-full"
+                [value]="selectedDepartment()?.id ?? ''"
+                (change)="onDepartmentChange($event)">
+                <option value="">Seleccionar departamento</option>
+                @for (department of deparmentsQuery.data() ?? []; track department.id) {
+                  <option [value]="department.id">{{ department.name }}</option>
+                }
+              </select>
+            </fieldset>
+          </div>
+
+          <!-- Municipality combobox -->
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Municipio
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <select
+                class="select w-full"
+                [disabled]="!selectedDepartment()"
+                [value]="selectedMunicipality()?.id ?? ''"
+                (change)="onMunicipalityChange($event)">
+                <option value="">Seleccionar municipio</option>
+                @for (municipality of municipalitiesQuery.data() ?? []; track municipality.id) {
+                  <option [value]="municipality.id">{{ municipality.name }}</option>
+                }
+              </select>
+            </fieldset>
+          </div>
+
+          <!-- District combobox -->
+          <div class="md:col-span-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Distrito
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <select
+                class="select w-full"
+                [disabled]="!selectedMunicipality()"
+                [value]="selectedDistrict()?.id ?? ''"
+                (change)="onDistrictChange($event)">
+                <option value="">Seleccionar distrito</option>
+                @for (district of districtsQuery.data() ?? []; track district.id) {
+                  <option [value]="district.id">{{ district.name }}</option>
+                }
+              </select>
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('districtId')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Dirección
+                @if (isTaxPayerOn()) {
+                  <span class="text-error">*</span>
+                }
+              </legend>
+              <input
+                type="text"
+                class="input w-full"
+                placeholder="Casa, calle, avenida..."
+                formControlName="address"
+                [class.input-error]="
+                  customerForm.get('address')?.invalid &&
+                  customerForm.get('address')?.touched
+                "
+              />
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('address')!"
+            ></app-form-error-label>
+          </div>
+        </div>
+      } @else {
+        <div
+          class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6 animate-fadeIn"
+          formGroupName="taxInfo"
+        >
+          <div class="md:col-span-6">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Nombre comercial <span class="text-error">*</span>
+              </legend>
+              <input
+                type="text"
+                class="input w-full"
+                placeholder="Nombre comercial"
+                formControlName="tradeName"
+              />
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('taxInfo.tradeName')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Tipo de documento <span class="text-error">*</span>
+              </legend>
+              <label class="select w-full">
+                <select
+                  formControlName="taxDocumentTypeId"
+                  (change)="onTaxDocumentTypeChange($event)"
+                >
+                  @for (
+                    taxDocument of taxDocumentTypeQuery.data();
+                    track taxDocument.id
+                  ) {
+                    <option [value]="taxDocument.id">
+                      {{ taxDocument.name }}
+                    </option>
+                  }
+                </select>
+              </label>
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('taxInfo.taxDocumentTypeId')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Número de documento <span class="text-error">*</span>
+              </legend>
+              <input
+                type="text"
+                class="input w-full"
+                placeholder="Número documento"
+                formControlName="taxDocumentNumber"
+              />
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('taxInfo.taxDocumentNumber')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                NRC <span class="text-error">*</span>
+              </legend>
+              <input
+                type="text"
+                class="input w-full"
+                placeholder="Número NRC"
+                formControlName="nrc"
+              />
+            </fieldset>
+            <app-form-error-label
+              [control]="customerForm.get('taxInfo.nrc')!"
+            ></app-form-error-label>
+          </div>
+
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">
+                Actividad económica <span class="text-error">*</span>
+              </legend>
+              <app-combobox-form-control
+                class="w-full"
+                (click)="econTouched.set(true)"
+                (valuesOutput)="setEconomicActivity($event)"
+                (searchTextChange)="economicActivityComboboxOutput.set($event); econTouched.set(true)"
+                [placeholderInput]="'Actividad Económica'"
+                [valuesResource]="economicActivityQuery.data() ?? []"
+                [loading]="economicActivityQuery.isLoading()"
+                [selectedValue]="selectedEconomicActivity()"
+                [isError]="
+                  !!customerForm.get('taxInfo.economicActivityId')?.errors
+                "
+              ></app-combobox-form-control>
+            </fieldset>
+          </div>
+        </div>
+      }
+
+      <!-- Modal Actions -->
+      <div
+        class="modal-action flex justify-between gap-2 pt-4 border-t border-base-content/10"
+      >
+        <div>
+          @if (currentStep() === 2) {
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="isSubmitting()"
+              (click)="goBack()"
+            >
+              Atrás
+            </button>
+          }
+        </div>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            [disabled]="isSubmitting()"
+            (click)="closeModal()"
+          >
+            Cancelar
+          </button>
+
+          @if (isTaxPayerOn()) {
+            @if (currentStep() === 1) {
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="isSubmitting()"
+                (click)="goNext()"
+              >
+                Siguiente
+                <span class="icon-[tabler--arrow-right] text-xl"></span>
+              </button>
+            }
+          }
+
+          <button
+            type="submit"
+            class="btn btn-success"
+            [disabled]="isSubmitting() || customerForm.invalid"
+          >
+            @if (isSubmitting()) {
+              <span class="loading loading-spinner loading-sm"></span>
+              <span>Guardando...</span>
+            } @else {
+              <span class="icon-[tabler--device-floppy] text-xl"></span>
+              <span>{{ isEditing() ? "Actualizar" : "Guardar" }}</span>
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button type="button" [disabled]="isSubmitting()" (click)="closeModal()">
+      Cerrar
+    </button>
+  </form>
+</dialog>

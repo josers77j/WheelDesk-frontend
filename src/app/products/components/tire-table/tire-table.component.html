@@ -1,0 +1,69 @@
+<div class="overflow-x-auto">
+
+  <table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 min-w-max">
+    <!-- head -->
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Medidas</th>
+        <th>Precio de Venta</th>
+        <th>Precio de compra</th>
+        <th>Marca</th>
+        <th>Proveedor</th>
+        <th>Estado</th>
+        <th>Cantidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows  -->
+      @for(product of products(); track product.id; ){
+      <tr (click)="changeRowSelectedStatus(product.id)"
+        [class.bg-gray-800]="product.id === this.productService.productIdSelected()"
+        [class.text-white]="product.id === this.productService.productIdSelected()"
+
+        class="transition-all ease-in delay-50 cursor-pointer">
+
+        <th id>{{ rowOffset() + $index + 1 }}</th>
+
+        <td>{{product.name}} </td>
+        <td>{{product.salePrice | currency | EmptyNumberField}}</td>
+        <td>{{ product.purchasePrice | currency | EmptyNumberField}}</td>
+        <td>{{product.brand?.name| EmptyField}}</td>
+        <td>{{product.provider?.name| EmptyField}}</td>
+        <td>
+          <span
+            [class.badge-success]="product.tire?.condition === 'NEW'"
+            [class.badge-info]="product.tire?.condition === 'USED'"
+            [class.badge-accent]="product.tire?.condition === 'EMERGENCY'"
+            class="badge">
+            {{product.tire?.condition |
+            TireCondition}}
+          </span>
+        </td>
+        <td>
+          <span
+            [class.badge-error]="product.stock < 2"
+            [class.badge-warning]="product.stock > 1 && product.stock <= 5"
+            [class.badge-success]="product.stock > 5"
+            class="badge">
+            {{product.stock}}
+          </span>
+        </td>
+      </tr>
+      }
+      <!-- empty -->
+      @empty {
+      @if(isLoading()){
+      <tr>
+        <td colspan="99"><app-skeleton [limit]="skeletonLimit()"></app-skeleton></td>
+      </tr>
+      } @else {
+      <tr>
+        <th>No hay registros</th>
+      </tr>
+      }
+      }
+
+    </tbody>
+  </table>
+</div>

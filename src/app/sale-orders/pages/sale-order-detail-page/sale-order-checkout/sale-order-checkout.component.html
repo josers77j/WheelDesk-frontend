@@ -1,0 +1,803 @@
+@if (savedSaleId(); as saleId) {
+  <div class="alert alert-warning mb-4">
+    <div>Venta #{{ saleId }} generada. El email no pudo enviarse; intenta nuevamente o llama a soporte.</div>
+    <button type="button" class="btn btn-sm" [disabled]="emailRetrying()" (click)="retryEmail()">Reintentar correo</button>
+    <button type="button" class="btn btn-sm" (click)="viewSavedSale()">Ver ventas</button>
+  </div>
+}
+@if (savedSaleId() === null) {
+@if (quotationSource(); as source) { <div class="alert alert-info mb-4">Venta desde cotización #{{ source }}. Puedes modificar los precios cotizados. Selecciona las zonas y los pagos antes de confirmar.</div> }
+<button type="button" class="btn btn-ghost mb-2" (click)="backToPreviousPage()"><span class="icon-[topcoat--back-light]"></span>
+  Regresar</button>
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+    <p class="font-bold text-4xl">Nueva venta</p>
+    <p class="text-xl font-thin">El borrador se guarda solo, incluso si recargas la página.</p>
+  </div>
+
+    <form [formGroup]="checkoutForm" (ngSubmit)="onSubmit()">
+<div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem] gap-5 items-start"><div class="min-w-0">
+    <!-- Tipo de documento: chips desde catálogo -->
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-semibold">Tipo de documento:</span>
+        <div class="flex flex-wrap gap-2" role="tablist" aria-label="Tipo de documento">
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="!isTaxCredit()"
+            class="btn btn-sm rounded-full"
+            [class.btn-info]="!isTaxCredit()"
+
+            [disabled]="!invoiceEntry()"
+            (click)="setDocumentChip(checkoutDocType.INVOICE)">
+            Consumidor final
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="isTaxCredit()"
+            class="btn btn-sm rounded-full"
+            [class.btn-info]="isTaxCredit()"
+
+            [disabled]="!taxCreditEntry()"
+            (click)="setDocumentChip(checkoutDocType.TAX_CREDIT)">
+            Crédito fiscal
+          </button>
+        </div>
+        @if (documentTypeCatalogQuery.isPending()) {
+          <span class="loading loading-spinner loading-sm"></span>
+        }
+      </div>
+    </div>
+
+
+
+        <!-- Cliente: existente o creado en línea (requerido solo en crédito fiscal) -->
+        <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">
+              Cliente {{ isTaxCredit() ? '(obligatorio)' : '(opcional)' }}
+            </legend>
+
+            <!-- Origen del cliente -->
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+              <div class="tabs tabs-box" role="tablist" aria-label="Origen del cliente">
+                <button type="button" role="tab" class="tab"
+                  [attr.aria-selected]="!isNewCustomerMode()" [class.tab-active]="!isNewCustomerMode()"
+                  (click)="setCustomerMode('EXISTING')">Existente</button>
+                <button type="button" role="tab" class="tab"
+                  [attr.aria-selected]="isNewCustomerMode()" [class.tab-active]="isNewCustomerMode()"
+                  (click)="setCustomerMode('NEW')">Nuevo</button>
+              </div>
+              @if (isNewCustomerMode()) {
+                <button class="btn btn-success btn-sm ml-auto" type="button" (click)="onCreateNewCustomer()">
+                  <span class="icon-[gridicons--create] text-xl"></span>
+                  Crear cliente
+                </button>
+              }
+            </div>
+
+            @if (!isNewCustomerMode()) {
+              <app-combobox-form-control
+                (click)="customerTouched.set(true)"
+                (valuesOutput)="setCustomer($event)"
+                (searchTextChange)="customerComboboxOutput.set($event); customerTouched.set(true)"
+                [placeholderInput]="'cliente'"
+                [valuesResource]="customersQuery.data() ?? []"
+                [loading]="customersQuery.isLoading()"
+                [isError]="!!checkoutForm.get('customerId')?.errors && !!checkoutForm.get('customerId')?.touched"
+                [selectedValue]="selectedCustomer()"></app-combobox-form-control>
+              <app-form-error-label [control]="checkoutForm.controls.customerId" requiredText="* Obligatorio: seleccione un cliente para crédito fiscal."></app-form-error-label>
+
+              <!-- Ficha del cliente elegido: el combobox solo trae id + nombre -->
+              <details class="collapse bg-base-100 border border-base-300 mt-3"
+                name="cliente-ficha" [attr.open]="clientInfoOpen() || null"
+                (toggle)="clientInfoOpen.set($any($event.target).open)"
+                data-testid="existing-customer-table">
+                <summary class="collapse-title font-semibold flex items-center justify-between">
+                  <span>Información del cliente</span>
+                  <span
+                    class="icon-[jam--chevron-down] text-xl transition-transform duration-200"
+                    [class.rotate-180]="clientInfoOpen()"
+                    aria-hidden="true"
+                  ></span>
+                </summary>
+                <div class="collapse-content text-sm">
+                  @if (isLoadingCustomerDetail()) {
+                    <p class="flex items-center justify-center gap-2 py-8 text-sm opacity-70">
+                      <span class="loading loading-spinner loading-xs"></span>
+                      Cargando cliente...
+                    </p>
+                  } @else {
+                    @if (customerDetail(); as customer) {
+                      <div class="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-3">
+                        <!-- Nombre: siempre primero, a todo lo ancho y destacado -->
+                        <div class="md:col-span-6 bg-base-200 rounded-lg p-3 flex items-start gap-3">
+                          <div class="min-w-0 flex-1">
+                            <p class="text-sm opacity-60">Nombre</p>
+                            <p class="text-xl font-semibold break-words" data-testid="customer-name">
+                              {{ customer.name }}
+                            </p>
+                          </div>
+                          @if (missingFields(customer); as missing) {
+                            @if (missing.length > 0) {
+                              <div class="tooltip shrink-0 mt-1"
+                                [attr.data-tip]="'Faltan: ' + missing.join(', ')">
+                                <span class="icon-[tabler--alert-triangle] text-warning text-lg"></span>
+                              </div>
+                            }
+                          }
+                        </div>
+
+                        <!-- Nombre comercial: texto largo con el correo al lado -->
+                        <div class="md:col-span-4 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Nombre comercial</p>
+                          <p class="font-medium break-words">{{ customer.taxInfo?.tradeName || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Correo</p>
+                          <p class="font-medium break-all">{{ customer.email || '—' }}</p>
+                        </div>
+
+                        <!-- Dirección: texto largo a todo lo ancho -->
+                        <div class="md:col-span-6 bg-base-200 rounded-lg p-3">
+                          <p class="text-sm opacity-60">Dirección</p>
+                          <p class="font-medium whitespace-pre-wrap break-words">{{ customer.address || '—' }}</p>
+                        </div>
+
+                        <!-- Actividad económica (con su código MH) y tipo de documento -->
+                        <div class="md:col-span-4 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Actividad económica</p>
+                          <p class="font-medium break-words">
+                            {{ customer.taxInfo?.economicActivity?.name || '—' }}
+                            @if (customer.taxInfo?.economicActivity?.code) {
+                              <span class="opacity-60">({{ customer.taxInfo?.economicActivity?.code }})</span>
+                            }
+                          </p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Tipo de documento</p>
+                          <p class="font-medium break-words">{{ customer.taxInfo?.taxDocumentType?.name || '—' }}</p>
+                        </div>
+
+                        <!-- Datos cortos: tres por fila, filas parejas -->
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 flex items-start gap-2 min-w-0">
+                          <div class="min-w-0 flex-1">
+                            <p class="text-sm opacity-60">Documento</p>
+                            <p class="font-medium break-all" data-testid="customer-document">
+                              {{ customer.taxInfo?.taxDocumentNumber || '—' }}
+                            </p>
+                          </div>
+                          @if (customer.taxInfo?.taxDocumentNumber) {
+                            <button type="button" class="btn btn-xs btn-ghost shrink-0 -mr-1 -mt-1"
+                              title="Copiar" aria-label="Copiar número de documento"
+                              [attr.data-copy]="customer.taxInfo?.taxDocumentNumber"
+                              onclick="void navigator.clipboard.writeText(this.dataset.copy)">
+                              <span class="icon-[tabler--copy]"></span>
+                            </button>
+                          }
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">NRC</p>
+                          <p class="font-medium break-all">{{ customer.taxInfo?.nrc || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Teléfono</p>
+                          <p class="font-medium break-words">{{ customer.phone || '—' }}</p>
+                        </div>
+
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Tipo</p>
+                          <p class="font-medium">
+                            {{ customer.customerType === 'LEGAL' ? 'Jurídico' : customer.customerType === 'NATURAL' ? 'Natural' : '—' }}
+                          </p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Contribuyente</p>
+                          <p class="font-medium">{{ customer.isTaxPayer ? 'Sí' : 'No' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Distrito</p>
+                          <p class="font-medium break-words">{{ customer.district?.name || '—' }}</p>
+                        </div>
+
+                        <!-- Acciones: aquí solo se edita (crear/eliminar viven en otros flujos) -->
+                        <div class="md:col-span-6 flex justify-end gap-1 pt-1">
+                          <button class="btn btn-xs btn-ghost" type="button" (click)="onModifyExistingCustomer()"
+                            title="Modificar" aria-label="Modificar">
+                            <span class="icon-[akar-icons--edit] text-xl text-info"></span>
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <p class="py-8 text-center text-sm opacity-60">Sin cliente: elige uno del buscador</p>
+                    }
+                  }
+                </div>
+              </details>
+            } @else {
+              <p class="text-xs opacity-70 mb-2">El cliente se crea aquí mismo y queda ligado a esta venta.</p>
+
+              <!-- Ficha del cliente recién creado -->
+              <details class="collapse bg-base-100 border border-base-300 mt-3"
+                name="cliente-ficha" [attr.open]="clientInfoOpen() || null"
+                (toggle)="clientInfoOpen.set($any($event.target).open)"
+                data-testid="new-customer-table">
+                <summary class="collapse-title font-semibold flex items-center justify-between">
+                  <span>Información del cliente</span>
+                  <span
+                    class="icon-[jam--chevron-down] text-xl transition-transform duration-200"
+                    [class.rotate-180]="clientInfoOpen()"
+                    aria-hidden="true"
+                  ></span>
+                </summary>
+                <div class="collapse-content text-sm">
+                  @if (customerDetail(); as customer) {
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-3">
+                      <!-- Nombre: siempre primero, a todo lo ancho y destacado -->
+                      <div class="md:col-span-6 bg-base-200 rounded-lg p-3 flex items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm opacity-60">Nombre</p>
+                          <p class="text-xl font-semibold break-words" data-testid="customer-name">
+                            {{ customer.name }}
+                          </p>
+                        </div>
+                        @if (missingFields(customer); as missing) {
+                          @if (missing.length > 0) {
+                            <div class="tooltip shrink-0 mt-1"
+                              [attr.data-tip]="'Faltan: ' + missing.join(', ')">
+                              <span class="icon-[tabler--alert-triangle] text-warning text-lg"></span>
+                            </div>
+                          }
+                        }
+                      </div>
+
+                      <!-- Nombre comercial: texto largo con el correo al lado -->
+                      <div class="md:col-span-4 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Nombre comercial</p>
+                        <p class="font-medium break-words">{{ customer.taxInfo?.tradeName || '—' }}</p>
+                      </div>
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Correo</p>
+                        <p class="font-medium break-all">{{ customer.email || '—' }}</p>
+                      </div>
+
+                      <!-- Dirección: texto largo a todo lo ancho -->
+                      <div class="md:col-span-6 bg-base-200 rounded-lg p-3">
+                        <p class="text-sm opacity-60">Dirección</p>
+                        <p class="font-medium whitespace-pre-wrap break-words">{{ customer.address || '—' }}</p>
+                      </div>
+
+                      <!-- Actividad económica (con su código MH) y tipo de documento -->
+                      <div class="md:col-span-4 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Actividad económica</p>
+                        <p class="font-medium break-words">
+                          {{ customer.taxInfo?.economicActivity?.name || '—' }}
+                          @if (customer.taxInfo?.economicActivity?.code) {
+                            <span class="opacity-60">({{ customer.taxInfo?.economicActivity?.code }})</span>
+                          }
+                        </p>
+                      </div>
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Tipo de documento</p>
+                        <p class="font-medium break-words">{{ customer.taxInfo?.taxDocumentType?.name || '—' }}</p>
+                      </div>
+
+                      <!-- Datos cortos: tres por fila, filas parejas -->
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 flex items-start gap-2 min-w-0">
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm opacity-60">Documento</p>
+                          <p class="font-medium break-all" data-testid="customer-document">
+                            {{ customer.taxInfo?.taxDocumentNumber || '—' }}
+                          </p>
+                        </div>
+                        @if (customer.taxInfo?.taxDocumentNumber) {
+                          <button type="button" class="btn btn-xs btn-ghost shrink-0 -mr-1 -mt-1"
+                            title="Copiar" aria-label="Copiar número de documento"
+                            [attr.data-copy]="customer.taxInfo?.taxDocumentNumber"
+                            onclick="void navigator.clipboard.writeText(this.dataset.copy)">
+                            <span class="icon-[tabler--copy]"></span>
+                          </button>
+                        }
+                      </div>
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">NRC</p>
+                        <p class="font-medium break-all">{{ customer.taxInfo?.nrc || '—' }}</p>
+                      </div>
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Teléfono</p>
+                        <p class="font-medium break-words">{{ customer.phone || '—' }}</p>
+                      </div>
+
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Tipo</p>
+                        <p class="font-medium">
+                          {{ customer.customerType === 'LEGAL' ? 'Jurídico' : customer.customerType === 'NATURAL' ? 'Natural' : '—' }}
+                        </p>
+                      </div>
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Contribuyente</p>
+                        <p class="font-medium">{{ customer.isTaxPayer ? 'Sí' : 'No' }}</p>
+                      </div>
+                      <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                        <p class="text-sm opacity-60">Distrito</p>
+                        <p class="font-medium break-words">{{ customer.district?.name || '—' }}</p>
+                      </div>
+
+                      <!-- Acciones: al final, alineadas a la derecha -->
+                      <div class="md:col-span-6 flex justify-end gap-1 pt-1">
+                        <button class="btn btn-xs btn-ghost" type="button" (click)="onModifyNewCustomer()"
+                          title="Modificar" aria-label="Modificar">
+                          <span class="icon-[akar-icons--edit] text-xl text-info"></span>
+                        </button>
+                        <button class="btn btn-xs btn-ghost" type="button" onclick="my_modal_1.showModal()"
+                          title="Eliminar" aria-label="Eliminar">
+                          <span class="icon-[material-symbols--delete] text-xl text-error"></span>
+                        </button>
+                        <button class="btn btn-xs btn-ghost" type="button" (click)="onCreateAnotherCustomer()"
+                          title="Crear de nuevo" aria-label="Crear de nuevo">
+                          <span class="icon-[gridicons--create] text-xl text-success"></span>
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <p class="py-8 text-center text-sm opacity-60">Sin cliente: crea uno nuevo</p>
+                  }
+                </div>
+              </details>
+
+              @if (customerDetail(); as customer) {
+                @if (selectedCustomer()?.id === customer.id) {
+                  <p class="text-xs opacity-70 mt-2" data-testid="selected-customer-note">
+                    Cliente seleccionado para la venta: <span class="font-semibold">{{ customer.name }}</span>
+                  </p>
+                }
+              }
+            }
+          </fieldset>
+        </div>
+
+        <!-- Productos / items -->
+        <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 flex flex-col gap-3 border border-base-300">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <h1 class="text-2xl font-bold sm:mr-auto">Detalle de productos</h1>
+          <button class="btn btn-success w-full sm:w-auto" type="button"
+            (click)="onCreateItem()">
+            <span class="icon-[gridicons--create] text-2xl"></span>
+            Agregar producto
+          </button>
+        </div>
+
+        <!-- items -->
+        <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 mt-3">
+          <table class="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Zona</th>
+                <th>Cantidad</th>
+                 <th>Precio</th>
+                <th>Descuento</th>
+                <th>Subtotal est.</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of itemsArray.controls; track $index) {
+                <tr (click)="onChangeIdItem($index)"
+                  [class.bg-gray-800]="$index === selectedIndexItem()"
+                  [class.text-white]="$index === selectedIndexItem()"
+                  class="transition-all ease-in delay-50 cursor-pointer">
+                  <th>{{ $index + 1 }}</th>
+                  <td>{{ item.value?.name }}</td>
+                  <td>{{ item.value?.zoneName }}</td>
+                  <td>{{ item.value?.quantity }}</td>
+                   <td>
+                     @if (item.value?.unitPrice !== null && item.value?.unitPrice !== undefined) {
+                       {{ item.value.unitPrice | currency }}
+                     } @else {
+                       <span class="opacity-70">{{ item.value?.unitPriceEstimate | currency }}</span>
+                       <span class="text-xs opacity-60">(sugerido)</span>
+                     }
+                   </td>
+                  <td>
+                    @if (item.value?.discountType) {
+                      {{ item.value?.discountType === 'PERCENT' ? (item.value?.discountValue + ' %') : (item.value?.discountValue | currency) }}
+                    } @else {
+                      <span class="opacity-60">—</span>
+                    }
+                  </td>
+                  <td>{{ item.value?.lineTotal | currency }}</td>
+                  <td>
+                    <button class="btn btn-xs btn-ghost btn-error inline-flex"
+                      type="button"
+                      (click)="$event.stopPropagation(); onDeleteItem($index)">
+                      <span class="icon-[streamline--delete-1-solid]"></span>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="99" class="text-center opacity-60">Sin productos: agrega al menos uno</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Plazo + descuento global: plazo | tipo | monto -->
+        <div class="flex flex-col sm:flex-row gap-2">
+          <fieldset class="fieldset flex-1 min-w-0">
+            <legend class="fieldset-legend">Plazo de pago (próximamente)</legend>
+            <select class="select w-full" formControlName="paymentTermId" [attr.disabled]="true">
+              <option [ngValue]="null">Contado</option>
+              @for (term of paymentTermsQuery.data() ?? []; track term.id) {
+                <option [ngValue]="term.id">{{ term.name }}</option>
+              }
+            </select>
+          </fieldset>
+          <fieldset class="fieldset flex-1 min-w-0">
+            <legend class="fieldset-legend">Descuento global (opcional)</legend>
+            <div class="flex gap-2">
+              <select class="select flex-1 min-w-0" formControlName="discountType">
+                <option [ngValue]="null">Sin descuento</option>
+                <option [ngValue]="'USD'">$ Fijo</option>
+                <option [ngValue]="'PERCENT'">% Porcentaje</option>
+              </select>
+              <input class="input w-28" type="number" min="0" step="0.01"
+                placeholder="0.00" formControlName="discountValue" />
+            </div>
+          </fieldset>
+        </div>
+        </div>
+        <!-- /Productos / items -->
+
+        <!-- Pagos -->
+        <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 flex flex-col gap-3 border border-base-300">
+        <!-- Pagos -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <h1 class="text-2xl font-bold sm:mr-auto">Pagos</h1>
+          <button class="btn btn-info w-full sm:w-auto" type="button"
+            (click)="onAddPayment()">
+            <span class="icon-[gridicons--create] text-2xl"></span>
+            Agregar pago
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2" formArrayName="payments">
+          @for (payment of paymentsArray.controls; track payment; let i = $index) {
+            <div class="flex gap-2 items-end" [formGroupName]="i">
+              <fieldset class="fieldset flex-1">
+                <legend class="fieldset-legend">Método</legend>
+                <select class="select w-full" [class.select-error]="payment.get('paymentMethodId')?.touched && payment.get('paymentMethodId')?.invalid" formControlName="paymentMethodId">
+                  <option [ngValue]="null">Seleccionar</option>
+                  @for (method of paymentMethodsQuery.data() ?? []; track method.id) {
+                    <option [ngValue]="method.id">{{ method.name }}</option>
+                  }
+                </select>
+                <app-form-error-label [control]="payment.get('paymentMethodId')!" requiredText="* Obligatorio: seleccione un método de pago."></app-form-error-label>
+              </fieldset>
+              <fieldset class="fieldset w-40">
+                <legend class="fieldset-legend">Monto $</legend>
+                <input class="input w-full" [class.input-error]="payment.get('amount')?.touched && payment.get('amount')?.invalid" type="number" min="0.01" step="0.01"
+                  placeholder="0.00" formControlName="amount" />
+                <app-form-error-label [control]="payment.get('amount')!" requiredText="* Obligatorio: indique el monto del pago."></app-form-error-label>
+              </fieldset>
+              <button class="btn btn-ghost btn-error shrink-0" type="button"
+                (click)="onDeletePayment(i)" aria-label="Quitar pago">
+                <span class="icon-[streamline--delete-1-solid]"></span>
+              </button>
+            </div>
+          } @empty {
+            <p class="opacity-60">Sin pagos: agrega al menos uno que cubra el total.</p>
+          }
+        </div>
+        </div>
+        <!-- /Pagos -->
+
+<section class="bg-base-100 rounded-box border border-base-300 p-5 mb-5">
+  <h2 class="font-semibold text-lg">Documentos de venta</h2>
+  <p class="text-sm text-base-content/60 mt-1">Los originales se guardarán con la venta y se enviarán al correo del cliente.</p>
+  <div class="border border-dashed border-base-content/30 rounded-box bg-base-200/30 p-5 mt-4 text-center"
+    [class.border-primary]="draggingAttachments() && !isLoading() && savedSaleId() === null"
+    [class.selection-active]="draggingAttachments() && !isLoading() && savedSaleId() === null"
+    (dragover)="$event.preventDefault(); draggingAttachments.set(true)"
+    (dragleave)="draggingAttachments.set(false)"
+    (drop)="onAttachmentsDropped($event)">
+    <span class="icon-[tabler--cloud-upload] text-3xl text-primary" aria-hidden="true"></span>
+    <p class="font-medium mt-2">{{ attachmentFiles().length ? 'Agregar o reemplazar documento' : 'Arrastrar PDF o JSON aquí' }}</p>
+    <p class="text-xs text-base-content/60 mt-1">Máximo un archivo por formato. Para guardar, deben estar ambos o ninguno.</p>
+    <label class="btn btn-outline mt-4 w-full sm:w-auto" [class.btn-disabled]="isLoading() || savedSaleId() !== null">
+      <span class="icon-[tabler--paperclip]" aria-hidden="true"></span>Seleccionar archivos
+      <input id="sale-attachments" class="sr-only" type="file" multiple accept=".pdf,.json" [disabled]="isLoading() || savedSaleId() !== null" (change)="onAttachmentsSelected($event)" />
+    </label>
+  </div>
+  @for (file of attachmentFiles(); track file.name) {
+    <div class="flex flex-wrap items-center gap-2 mt-3">
+      <span class="text-sm break-all flex-1 min-w-0">{{ file.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'JSON' }} · {{ file.name }}</span>
+      <button type="button" class="btn btn-sm" (click)="previewAttachment(file)">Ver</button>
+      <button type="button" class="btn btn-sm btn-ghost" [disabled]="isLoading() || savedSaleId() !== null" [attr.aria-label]="'Quitar ' + file.name" (click)="removeAttachment(file)">✕</button>
+    </div>
+  }
+</section>
+</div><aside class="min-w-0 xl:sticky xl:top-20"><section class="bg-base-100 rounded-box border border-base-300 p-5"><h2 class="font-semibold text-lg mb-4">Revisión y guardado</h2>        <!-- Totales estimados -->
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between">
+            <span class="opacity-70">Subtotal estimado</span>
+            <span class="font-semibold">{{ subtotalEstimate() | currency }}</span>
+          </div>
+          <div class="flex justify-between text-xl font-bold">
+            <span>Total estimado</span>
+            <span>{{ totalEstimate() | currency }}</span>
+          </div>
+          <div class="flex justify-between" [class.text-error]="paymentsTotal() !== totalEstimate()">
+            <span class="opacity-70">Pagos registrados</span>
+            <span class="font-semibold">{{ paymentsTotal() | currency }}</span>
+          </div>
+          @if (showChange()) {
+            <div class="flex justify-between text-success">
+              <span>Cambio a retornar (efectivo)</span>
+              <span class="font-bold">{{ changeTotal() | currency }}</span>
+            </div>
+          }
+          <p class="text-xs opacity-60">Los precios los confirma el servidor al crear la venta; el excedente solo se permite en efectivo y se muestra acá (al back se le envía el monto tal cual).</p>
+        </div>
+
+        <div class="flex flex-col gap-2 mt-5">
+          <button class="btn" type="button" (click)="onCancel()">Cancelar</button>
+          <button type="submit" class="btn btn-primary w-full font-bold"
+            [disabled]="isLoading() || savedSaleId() !== null">
+            <span class="loading loading-spinner loading-lg" [hidden]="!isLoading()"></span>
+            Crear venta
+          </button>
+        </div>
+<app-review-checklist [items]="reviewItems()" /></section></aside></div>
+
+      </form>
+
+@if (selectedIndexItem() !== null) {
+  <!-- Píldora contextual: item seleccionado -->
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn border-base-300">
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedIndexItem()! + 1 }}</span>
+    </div>
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="onModifyItem()"
+      title="Modificar"
+      aria-label="Modificar">
+      <span class="icon-[akar-icons--edit] text-xl sm:text-lg text-info"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+    </button>
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="onDeleteItem(selectedIndexItem()!)"
+      title="Eliminar"
+      aria-label="Eliminar">
+      <span class="icon-[material-symbols--delete] text-xl sm:text-lg text-error"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Remover</span>
+    </button>
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="selectedIndexItem.set(null)"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+}
+
+<dialog #itemModal class="modal">
+  <div class="modal-box w-11/12 max-w-5xl">
+    <button class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 absolute top-3 right-3"
+      (click)="closeItemModal()"
+      title="Cerrar"
+      aria-label="Cerrar">
+      ✕
+    </button>
+    <h3 class="text-lg font-bold">Agregar productos</h3>
+    <div class="alert alert-info py-2 px-3 mt-2 mb-3 text-sm" role="status">
+      <span>Elige el producto y después la bodega y la zona desde donde se despacha: cada línea se cobra desde una zona. Solo aparecen productos con existencias disponibles.</span>
+    </div>
+
+    <div class="flex gap-1 flex-wrap mb-3" role="group" aria-label="Tipo de producto">
+      <button type="button" class="btn btn-sm"
+        [class.btn-primary]="productTypeFilter() === ''"
+
+        (click)="setProductTypeFilter('')">Todos</button>
+      <button type="button" class="btn btn-sm"
+        [class.btn-primary]="productTypeFilter() === 'TIRE'"
+
+        (click)="setProductTypeFilter('TIRE')">Llantas</button>
+      <button type="button" class="btn btn-sm"
+        [class.btn-primary]="productTypeFilter() === 'SUPPLY'"
+
+        (click)="setProductTypeFilter('SUPPLY')">Suministros</button>
+      <button type="button" class="btn btn-sm"
+        [class.btn-primary]="productTypeFilter() === 'SERVICE'"
+
+        (click)="setProductTypeFilter('SERVICE')">Servicios</button>
+    </div>
+
+    <form [formGroup]="itemForm" (ngSubmit)="onSaveItem()">
+      @if (itemForm.touched && itemValidationMessages().length > 0) {
+        <div class="alert alert-error mb-4" role="alert">
+          <div>
+            <p class="font-semibold">Revise los datos del producto</p>
+            <ul class="list-disc pl-5">
+              @for (message of itemValidationMessages(); track message) { <li>{{ message }}</li> }
+            </ul>
+          </div>
+        </div>
+      }
+      <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Producto</legend>
+            <app-combobox-form-control
+              (click)="productTouched.set(true)"
+              (valuesOutput)="setItemProduct($event)"
+              (searchTextChange)="productComboboxOutput.set($event); productTouched.set(true)"
+              [placeholderInput]="'producto'"
+              [valuesResource]="productsQuery.data() ?? []"
+              [loading]="productsQuery.isLoading()"
+              [isError]="!!itemForm.get('productId')?.errors && !!itemForm.get('productId')?.touched"
+              [selectedValue]="selectedProduct()"
+              [disable]="selectedIndexItem() !== null"></app-combobox-form-control>
+            @if (itemForm.controls.productId.touched && itemForm.controls.productId.invalid) {
+              <p class="text-error text-xs" role="alert">* Obligatorio: seleccione un producto.</p>
+            }
+          </fieldset>
+        </div>
+
+        <div
+          [class.md:col-span-3]="!!selectedWarehouse() || selectedIndexItem() !== null"
+          [class.md:col-span-6]="!selectedWarehouse() && selectedIndexItem() === null">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Bodega</legend>            <app-combobox-form-control
+              (click)="warehouseTouched.set(true)"
+              (valuesOutput)="setWarehouse($event)"
+              (searchTextChange)="warehouseComboboxOutput.set($event); warehouseTouched.set(true)"
+              [placeholderInput]="'bodega'"
+              [valuesResource]="warehousesQuery.data() ?? []"
+              [loading]="warehousesQuery.isLoading()"
+              [selectedValue]="selectedWarehouse()"
+              [isError]="itemForm.controls.zoneId.touched && needsItemWarehouse()"
+              [disable]="!selectedProduct()"></app-combobox-form-control>
+            @if (itemForm.controls.zoneId.touched && needsItemWarehouse()) {
+              <p class="text-error text-xs" role="alert">* Obligatorio: seleccione una bodega para elegir la zona.</p>
+            }
+          </fieldset>
+        </div>
+
+        @if (selectedWarehouse() || selectedIndexItem() !== null) {
+          <div class="md:col-span-3">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Zona (obligatoria)</legend>
+              <app-combobox-form-control
+                (click)="zoneTouched.set(true)"
+                (valuesOutput)="setItemZone($event)"
+                namePrefixSeparator=" / "
+                (searchTextChange)="zoneComboboxOutput.set($event); zoneTouched.set(true)"
+                [placeholderInput]="'zona'"
+                [valuesResource]="zonesQuery.data() ?? []"
+                [loading]="zonesQuery.isLoading()"
+                [isError]="!!itemForm.get('zoneId')?.errors && !!itemForm.get('zoneId')?.touched"
+                [selectedValue]="selectedZone()"
+                [disable]="!selectedProduct()"></app-combobox-form-control>
+              <app-form-error-label [control]="itemForm.controls.zoneId" requiredText="* Obligatorio: seleccione la zona de salida."></app-form-error-label>
+            </fieldset>
+          </div>
+        }
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Cantidad</legend>
+            <input class="input w-full" [class.input-error]="itemForm.controls.quantity.touched && itemForm.controls.quantity.invalid" placeholder="1" formControlName="quantity"
+              type="number" inputmode="numeric" min="1" />
+          </fieldset>
+          <app-form-error-label [control]="itemForm.get('quantity')!"></app-form-error-label>
+        </div>
+
+         <div class="md:col-span-2">
+           <fieldset class="fieldset">
+             <legend class="fieldset-legend">Precio de venta (opcional)</legend>
+             <input class="input w-full" [class.input-error]="itemForm.controls.unitPrice.touched && itemForm.controls.unitPrice.invalid" type="number" min="0" step="0.01"
+               placeholder="Sin asignar" formControlName="unitPrice" />
+             <app-form-error-label [control]="itemForm.get('unitPrice')!"></app-form-error-label>
+           </fieldset>
+         </div>
+
+         <div class="md:col-span-2">
+           <fieldset class="fieldset">
+             <legend class="fieldset-legend">Tipo descuento</legend>
+            <select class="select w-full" formControlName="discountType">
+              <option [ngValue]="null">Ninguno</option>
+              <option [ngValue]="'USD'">$</option>
+              <option [ngValue]="'PERCENT'">%</option>
+            </select>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Descuento $</legend>
+            <input class="input w-full" type="number" min="0" step="0.01"
+              placeholder="0.00" formControlName="discountValue" />
+          </fieldset>
+        </div>
+      </div>
+
+      @if (selectedProduct()) {
+        <div class="stats stats-vertical sm:stats-horizontal shadow mt-3 md:col-span-6">
+          <div class="stat py-2">
+            <div class="stat-title">Precio estimado</div>
+            <div class="stat-value text-lg">{{ priceEstimate() | currency }}</div>
+          </div>
+          @if (productStock(); as stock) {
+            <div class="stat py-2">
+              <div class="stat-title">En esta zona</div>
+              <div class="stat-value text-lg">{{ zoneAvailable() ?? 0 }}</div>
+            </div>
+            <div class="stat py-2">
+              <div class="stat-title">Stock total</div>
+              <div class="stat-value text-lg">{{ stock.total }}</div>
+            </div>
+          }
+        </div>
+      }
+      <div class="flex justify-between items-center gap-2 mt-4">
+        <button class="btn" type="button" (click)="closeItemModal()">Cerrar</button>
+        <button type="submit" class="btn btn-success">
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="closeItemModal()">Cerrar</button></form>
+</dialog>
+
+<dialog #priceConfirmDialog class="modal" (cancel)="cancelPriceConfirmation()">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Confirmar precio de venta</h3>
+    <p class="py-4">{{ priceConfirmationMessage() }}</p>
+    <div class="modal-action">
+      <button type="button" class="btn btn-ghost" (click)="cancelPriceConfirmation()">
+        Cancelar
+      </button>
+      <button type="button" class="btn btn-info" (click)="confirmPrice()">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="cancelPriceConfirmation()">Cerrar</button></form>
+</dialog>
+
+<app-customer-form-modal (saved)="onCustomerSaved($event)"></app-customer-form-modal>
+<app-confirm-action-modal
+  title="Crear venta venta"
+  [message]="invoiceSummaryMessage()"
+  confirmLabel="Crear venta"
+  (confirmed)="onInvoiceConfirmed()" />
+<app-delete-action-modal />
+
+<app-alert />
+}
+
+<app-pdf-preview />
+
+<dialog #attachmentPreviewDialog class="modal" (close)="closeAttachmentPreview()">
+  <div class="modal-box max-w-4xl border border-base-content/20">
+    <div class="flex justify-between gap-3 mb-4">
+      <h2 class="font-semibold text-lg">Documento de venta</h2>
+      <button type="button" class="btn btn-circle btn-sm btn-ghost" (click)="closeAttachmentPreview()" aria-label="Cerrar">✕</button>
+    </div>
+    <pre class="text-xs whitespace-pre-wrap break-words max-h-[60vh] overflow-auto">{{ attachmentPreviewText() }}</pre>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button type="submit" (click)="closeAttachmentPreview()">Cerrar</button>
+  </form>
+</dialog>

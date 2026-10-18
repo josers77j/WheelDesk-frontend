@@ -1,0 +1,48 @@
+<div class="flex w-full items-center gap-1">
+  <!-- Selector de país: botón muestra solo el código; el menú muestra código + nombre -->
+  <div class="relative">
+    <button
+      #countryBtn
+      type="button"
+      class="btn btn-sm w-20 justify-center gap-0.5"
+      [attr.disabled]="isDisabled ? true : null"
+      (click)="toggleCountryMenu()"
+    >
+      {{ callingCode() }}
+      <span class="icon-[tabler--chevron-down] text-base"></span>
+    </button>
+    <!-- Hogar del panel: al cerrar el listado vuelve aquí -->
+    <div #countryPanelHome class="contents"></div>
+    <!-- Listado portal al dialog: columna única, pegado al botón -->
+    <ul
+      #countryPanel
+      class="menu flex flex-col flex-nowrap rounded-box bg-base-200 p-2 shadow-lg"
+      [hidden]="!countryOpen()"
+    >
+      @for (c of countries; track c.code) {
+        <li>
+          <button
+            type="button"
+            [class.bg-primary]="c.code === country()"
+            [class.text-primary-content]="c.code === country()"
+            (click)="selectCountry(c.code)"
+          >
+            {{ c.callingCode }} · {{ c.name }}
+          </button>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <input
+    class="input w-full"
+    type="tel"
+    inputmode="numeric"
+    [value]="display()"
+    [placeholder]="country() === 'SV' ? 'XXXX-XXXX' : 'Número de teléfono'"
+    [attr.maxlength]="maxlength()"
+    [attr.disabled]="isDisabled ? true : null"
+    (input)="onInput($event)"
+    (paste)="onPaste($event)"
+  />
+</div>

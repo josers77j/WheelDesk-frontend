@@ -1,0 +1,49 @@
+
+
+<div class="fab">
+    <!-- a focusable div with tabindex is necessary to work on all browsers. role="button" is necessary for accessibility -->
+    <button
+        tabindex="0" role="button" class="btn btn-lg btn-circle btn-info">
+        <svg
+            aria-label="New"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+
+    </button>
+    <!-- buttons that show up when FAB is open -->
+
+    <!-- Delete -->
+    <button
+        class="btn btn-neutral w-full justify-start"
+        onclick="my_modal_1.showModal()">
+        <span class="icon-[material-symbols--delete] text-2xl"></span>
+        Eliminar
+    </button>
+
+    <!-- Modify -->
+    @if (useModal()) {
+    <button
+        class="btn btn-neutral w-full justify-start"
+        (click)="onModify()">
+        <span class="icon-[akar-icons--edit] text-2xl"></span>
+        Modificar
+    </button>
+    } @else {
+    <button
+        class="btn btn-neutral w-full justify-start"
+        [routerLink]="[redirectTo(),idForSelector()]"
+        [queryParams]="{productType: productType()}">
+        <span class="icon-[akar-icons--edit] text-2xl"></span>
+        Modificar
+    </button>
+    }
+
+</div>
+
+<app-delete-action-modal></app-delete-action-modal>

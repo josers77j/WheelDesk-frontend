@@ -1,0 +1,306 @@
+<button type="button" class="btn btn-ghost mb-2" (click)="backToPreviusPage()"><span class="icon-[topcoat--back-light]"></span>
+  Regresar</button>
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5">
+  <p class="font-bold text-4xl">Orden de compra</p>
+  <p class="text-xl font-thin">Todos los campos son obligatorios.</p>
+  @if (!isEditable()) {
+    <div role="alert" class="alert alert-warning mt-3">
+      <span>Esta orden ya fue procesada y está en solo lectura.</span>
+    </div>
+  }
+</div>
+
+<form [formGroup]="purchaseOrderForm" (ngSubmit)="onSubmit()">
+        <!-- Provider combobox -->
+        <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Proveedor del producto</legend>
+            <app-combobox-form-control
+              (click)="providerTouched.set(true)"
+              (valuesOutput)="setProvider($event)"
+              (searchTextChange)="providerComboboxOutput.set($event); providerTouched.set(true)"
+              [placeholderInput]="'Proveedor'"
+              [valuesResource]="providersQuery.data() ?? []"
+              [loading]="providersQuery.isLoading()"
+               [isError]="!!purchaseOrderForm.get('providerId')?.errors"
+              [selectedValue]="selectedProvider()"></app-combobox-form-control>
+          </fieldset>
+        </div>
+
+        <!-- Product section -->
+        <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 flex flex-col gap-3">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <h1 class="text-2xl font-bold sm:mr-auto">Detalle de productos</h1>
+          @if (isEditable()) {
+            <button class="btn btn-success w-full sm:w-auto" type="button"
+              (click)="onCreateSelected();openModal()">
+              <span class="icon-[gridicons--create] text-2xl"></span>
+              Agregar producto
+            </button>
+          }
+        </div>
+
+        <!-- products -->
+        <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 md:col-span-6 mt-3">
+          <table class="table table-zebra">
+            <!-- head -->
+            <thead>
+              <tr>
+                <th></th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Subtotal</th>
+                <th>Zona sugerida</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- row 1 -->
+
+              @for(product of this.detailsArray.controls; track $index){
+                <tr (click)="onChangeIdProduct($index)"  [class.bg-gray-800]="$index === this.selectedIndexProduct()"
+                  [class.text-white]="$index === this.selectedIndexProduct()"
+                class="transition-all ease-in delay-50 cursor-pointer">
+                  <th>{{$index+1}}</th>
+                  <td>{{product.value?.name}}</td>
+                  <td>{{product.value?.quantity}}</td>
+                  <td>{{product.value?.unitPrice | currency}}</td>
+                  <td>{{product.value?.subtotal | currency }}</td>
+                  <td>{{product.value?.suggestedZoneName || 'Sin asignar'}}</td>
+
+                  <td class>
+                      <button class="btn btn-xs btn-ghost btn-error inline-flex"
+                      (click)="$event.stopPropagation(); onDeleteProduct($index)">
+                        <span class="icon-[streamline--delete-1-solid]"></span>
+                      </button>
+                  </td>
+
+                </tr>
+              }
+
+
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex flex-col items-end md:flex-row md:items-start gap-2 w-full md:col-span-6 mt-4 mb-4">
+          <h1 class="text-2xl font-bold md:w-auto">Total</h1>
+          <h1 class="text-2xl font-bold md:w-auto md:ml-auto">{{totalPurchaseOrder() | currency}}</h1>
+
+        </div>
+        <div class="md:col-span-6 text-right">
+          @if (isEditable()) {
+            <div class="inline-flex items-end">
+               <button class="btn btn-success font-bold py-2 px-4 rounded-field" [disabled]="isLoading() || purchaseOrderForm.invalid || (isEditable() && !hasChanges())"><span
+                  class="loading loading-spinner loading-lg" [hidden]="!isLoading()"></span>Guardar</button>
+            </div>
+          }
+        </div>
+        </div>
+</form>
+
+@if(selectedIndexProduct() !== null && isEditable()){
+  <!-- Floating Action Bar Contextual - Producto seleccionado -->
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn">
+    <!-- Info del producto seleccionado -->
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedIndexProduct()! + 1 }}</span>
+    </div>
+
+    <!-- Botón Modificar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="onModifySelected();openModal()"
+      title="Modificar"
+      aria-label="Modificar">
+      <span class="icon-[akar-icons--edit] text-xl sm:text-lg text-info"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+    </button>
+
+    <!-- Botón Eliminar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="onDeleteProduct(selectedIndexProduct()!)"
+      title="Eliminar"
+      aria-label="Eliminar">
+      <span class="icon-[material-symbols--delete] text-xl sm:text-lg text-error"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Remover</span>
+    </button>
+
+    <!-- Botón Deseleccionar / Cerrar -->
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="clearProductSelection()"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+}
+
+<dialog #productModal class="modal">
+
+  <div class="modal-box w-11/12 max-w-5xl">
+    <h3 class="text-lg font-bold">Agregar productos</h3>
+    <p class="py-4">Se recomienda llenar todos los campos</p>
+
+    <div class="flex gap-1 flex-wrap mb-3" role="group" aria-label="Tipo de producto">
+      <button type="button" class="btn btn-sm"
+        [class.btn-primary]="purchaseProductTypeFilter() === 'TIRE'"
+
+        (click)="setPurchaseProductTypeFilter('TIRE')">Llantas</button>
+      <button type="button" class="btn btn-sm"
+        [class.btn-primary]="purchaseProductTypeFilter() === 'SUPPLY'"
+
+        (click)="setPurchaseProductTypeFilter('SUPPLY')">Suministros</button>
+      @if (isEditable() && selectedIndexProduct() === null) {
+        <button type="button" class="btn btn-sm btn-primary ml-auto"
+          (click)="openProductCreate()">Crear producto</button>
+      }
+    </div>
+
+  <form [formGroup]="productForm" (ngSubmit)="onSaveProduct()">
+      <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+        <!-- Provider combobox -->
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Producto</legend>
+            <app-combobox-form-control
+              (click)="productTouched.set(true)"
+              (valuesOutput)="setProduct($event)"
+              (searchTextChange)="productComboboxOutput.set($event); productTouched.set(true)"
+              [placeholderInput]="'producto'"
+              [valuesResource]="productsQuery.data() ?? []"
+              [loading]="productsQuery.isLoading()"
+               [isError]="!!productForm.get('productId')?.errors"
+              [selectedValue]="selectedProduct()"
+              [disable]="selectedIndexProduct() !== null"></app-combobox-form-control>
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        @if (selectedProductStock() !== null) {
+          <div class="md:col-span-6">
+            <div class="stats stats-vertical sm:stats-horizontal shadow">
+              <div class="stat py-2">
+                <div class="stat-title">Stock actual</div>
+                <div class="stat-value text-lg">{{ selectedProductStock() }}</div>
+              </div>
+            </div>
+          </div>
+        }
+
+      <div class="md:col-span-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Cantidad</legend>
+          <input
+            class="input w-full"
+            placeholder="4"
+            formControlName="quantity"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            step="1"
+           />
+          <div class="label">Requerido</div>
+        </fieldset>
+        @if (productForm.controls.quantity.touched && productForm.controls.quantity.invalid) {
+          <p class="text-error text-sm" role="alert">Ingresa una cantidad entera mayor que cero</p>
+        }
+      </div>
+
+      <div class="md:col-span-3">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Precio unitario $</legend>
+          <input
+            class="input w-full"
+            placeholder="20.00"
+            formControlName="unitPrice"
+            type="number"
+  inputmode="decimal"
+
+            />
+          <div class="label">Opcional</div>
+        </fieldset>
+        <app-form-error-label [control]="productForm.get('unitPrice')!"></app-form-error-label>
+      </div>
+
+      <!-- Bodega + zona sugerida en cascada -->
+      <div
+        [class.md:col-span-3]="!!selectedPurchaseWarehouse() || selectedIndexProduct() !== null"
+        [class.md:col-span-6]="!selectedPurchaseWarehouse() && selectedIndexProduct() === null">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Bodega</legend>
+          <app-combobox-form-control
+            (click)="warehouseTouched.set(true)"
+            (valuesOutput)="setPurchaseWarehouse($event)"
+            (searchTextChange)="warehouseComboboxOutput.set($event); warehouseTouched.set(true)"
+            [placeholderInput]="'bodega'"
+            [valuesResource]="warehousesQuery.data() ?? []"
+            [loading]="warehousesQuery.isLoading()"
+            [selectedValue]="selectedPurchaseWarehouse()"></app-combobox-form-control>
+        </fieldset>
+      </div>
+
+      <!-- Zone combobox (zona sugerida, opcional) -->
+      @if (selectedPurchaseWarehouse() || selectedIndexProduct() !== null) {
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Zona sugerida</legend>
+            <app-combobox-form-control
+              (click)="zoneTouched.set(true)"
+              (valuesOutput)="setZone($event)"
+              (searchTextChange)="zoneComboboxOutput.set($event); zoneTouched.set(true)"
+              [placeholderInput]="'zona (opcional)'"
+              namePrefixSeparator=" / "
+              [valuesResource]="zonesQuery.data() ?? []"
+              [loading]="zonesQuery.isLoading()"
+              [selectedValue]="selectedZone()"></app-combobox-form-control>
+            <p class="label">Opcional: si se deja vacía, se asignará al aprobar</p>
+          </fieldset>
+        </div>
+      }
+
+    </div>
+    <div class="flex justify-end mt-4">
+  <button class="btn btn-success" [disabled]="!productForm.dirty">
+    Guardar
+  </button>
+</div>
+  </form>
+
+  <div class="modal-action">
+
+      <form method="dialog">
+        <button class="btn" (click)="closeModal()" type="button">Cerrar</button>
+      </form>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="closeModal()">Cerrar</button></form>
+</dialog>
+
+<dialog #approveChoiceModal class="modal">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Orden {{ isNewOrder() ? 'creada' : 'actualizada' }} con éxito</h3>
+    <p class="py-4">¿Desea aprobar la orden ahora o más tarde?</p>
+    <div class="modal-action">
+      <button class="btn" type="button" (click)="onApproveLater()">Luego</button>
+      <button class="btn btn-success" type="button" (click)="onApproveNow()">
+        Aprobar ahora
+      </button>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera">Cerrar</button></form>
+</dialog>
+
+<app-approve-modal [order]="orderToApprove()" (approved)="onApprovedNow()"></app-approve-modal>
+
+<app-alert />
+
+@if (isEditable()) {
+  <app-tire-form-modal (saved)="onProductCreated($event)" />
+  <app-supply-form-modal (saved)="onProductCreated($event)" />
+}

@@ -1,0 +1,7 @@
+@if(transferResource.isLoading()){
+<app-form-skeleton></app-form-skeleton>
+}
+
+@if(transferResource.value()){
+<app-transfer-detail [transfer]="transferResource.value()!"></app-transfer-detail>
+}

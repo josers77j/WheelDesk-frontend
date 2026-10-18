@@ -1,0 +1,96 @@
+<app-title [titleDetail]="{ name: 'auditoría', count: auditQuery.data()?.meta?.total ?? 0 }" />
+
+<!-- Card: filtros -->
+<app-filter-panel [hasAdditional]="true" [expanded]="isOpen()" (expandedChange)="isOpen.set($event)" [hasSearch]="false" heading="Consultar auditoría">
+<div filterFields><fieldset class="filter-group "><legend>Actividad</legend><div class="filter-pair"><label class="form-control">
+      <span class="label-text mb-1">Acción</span>
+      <select
+        class="select w-full"
+        [ngModel]="formSearchParams().action ?? ''"
+        (ngModelChange)="setAction($event)">
+        <option value="">Todas</option>
+        @for (action of actions; track action) {
+          <option [value]="action">{{ action }}</option>
+        }
+      </select>
+    </label><label class="form-control">
+      <span class="label-text mb-1">Entidad</span>
+      <select
+        class="select w-full"
+        [ngModel]="formSearchParams().entityType ?? ''"
+        (ngModelChange)="setEntityType($event)">
+        <option value="">Todas</option>
+        @for (entity of entities; track entity) {
+          <option [value]="entity">{{ entity }}</option>
+        }
+      </select>
+    </label></div></fieldset><fieldset class="filter-group filter-group--compact"><legend>Registro</legend><div class="min-w-0"><label class="form-control">
+      <span class="label-text mb-1">ID entidad</span>
+      <input
+        class="input w-full"
+        placeholder="123"
+        [ngModel]="formSearchParams().entityId ?? ''"
+        (ngModelChange)="setEntityId($event)" />
+    </label></div></fieldset><fieldset class="filter-group filter-group--wide"><legend>Periodo</legend><div class="min-w-0"><app-date-range
+          class="lg:col-span-3"
+          (toChange)="setTo($event)"
+          (fromChange)="setFrom($event)"
+          [toSelected]="formSearchParams().to"
+          [fromSelected]="formSearchParams().from" /></div></fieldset></div>
+<div filterActions><button type="button" class="btn btn-primary" (click)="onSearch()" [disabled]="auditQuery.isFetching()"><span class="icon-[tabler--search] text-lg" aria-hidden="true"></span>Buscar</button><button type="button" class="btn btn-warning" (click)="onResetFilters()" [disabled]="auditQuery.isFetching()"><span class="icon-[tabler--x] text-lg" aria-hidden="true"></span>Limpiar</button></div>
+</app-filter-panel>
+
+<!-- Card: listado -->
+<div class="bg-base-100 rounded-box border border-base-300 p-4 md:p-6 mb-5">
+  <div class="flex flex-col gap-4 p-1">
+    <app-pagination
+        [currentPage]="auditQuery.data()?.meta?.page ?? 1"
+        [totalPages]="auditQuery.data()?.meta?.totalPages!"
+        [totalItems]="auditQuery.data()?.meta?.total ?? 0"
+        [pageSize]="auditQuery.data()?.meta?.limit ?? 0" ><app-limit paginationLimit class="w-full sm:w-48" [limitInput]="limitPerPage()" (outputLimit)="onLimitChange($event)" /></app-pagination>
+
+    @if (auditQuery.isPending()) {
+      <app-skeleton [limit]="limitPerPage()" />
+    } @else if (auditQuery.isError()) {
+      <app-query-error
+        [error]="$any(auditQuery.error())"
+        (retry)="auditQuery.refetch()"
+        (resetFilters)="onResetFilters()" />
+    } @else if ((auditQuery.data()?.items?.length ?? 0) === 0) {
+      <p class="text-sm opacity-70">Sin registros de auditoría.</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="table table-sm w-full">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Entidad</th>
+              <th>ID</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of auditQuery.data()?.items; track log.id) {
+              <tr class="hover:bg-base-300">
+                <td class="whitespace-nowrap">{{ log.at }}</td>
+                <td>{{ actorName(log) }}</td>
+                <td><span class="badge badge-info">{{ log.action }}</span></td>
+                <td>{{ log.entityType }}</td>
+                <td>{{ log.entityId }}</td>
+                <td class="max-w-64 truncate opacity-70">{{ log.metadata ? (log.metadata['resolutionNote'] ?? log.metadata['codigoLote'] ?? log.metadata['reason'] ?? '') : '' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <app-pagination
+        [currentPage]="auditQuery.data()?.meta?.page ?? 1"
+        [totalPages]="auditQuery.data()?.meta?.totalPages!"
+        [totalItems]="auditQuery.data()?.meta?.total ?? 0"
+        [pageSize]="auditQuery.data()?.meta?.limit ?? 0" />
+    }
+  </div>
+</div>

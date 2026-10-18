@@ -1,0 +1,49 @@
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 flex flex-wrap justify-between items-center gap-4 border border-base-300">
+  <div><h1 class="text-2xl font-bold">Tu operación de un vistazo</h1>@if (authService.isAdmin()) { <p class="text-sm text-base-content/60 mt-2">Ingresos, ventas y disponibilidad del mes.</p> }</div>
+  @if (authService.isAdmin()) {
+  <div class="flex gap-3 flex-wrap">
+    <label class="flex items-center gap-2">Año<select class="select select-bordered select-sm" [ngModel]="year()" (ngModelChange)="setYear($event)" [disabled]="periodQuery.isPending() || years().length === 0">@for (value of years(); track value) { <option [ngValue]="value">{{value}}</option> }</select></label>
+    <label class="flex items-center gap-2">Mes<select class="select select-bordered select-sm" [ngModel]="month()" (ngModelChange)="setMonth($event)" [disabled]="periodQuery.isPending() || months().length === 0">@for (value of months(); track value) { <option [ngValue]="value">{{monthNames[value-1]}}</option> }</select></label>
+  </div>
+  }
+</div>
+@if (authService.isAdmin()) {
+@if (periodQuery.isPending()) { <div class="skeleton h-32 w-full"></div> }
+@else if (periodQuery.isError()) { <div class="alert alert-error">No se pudieron consultar los períodos.<button class="btn btn-sm" (click)="periodQuery.refetch()">Reintentar</button></div> }
+@else if (!selectedPeriod()) { <div class="bg-base-100 rounded-box p-6 border border-base-300">Todavía no hay facturas con documentos disponibles.</div> }
+@else if (summaryQuery.isPending()) { <div class="skeleton h-48 w-full"></div> }
+@else if (summaryQuery.isError()) { <div class="alert alert-error">No se pudo consultar el resumen.<button class="btn btn-sm" (click)="summaryQuery.refetch()">Reintentar</button></div> }
+@else {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+    <div class="bg-base-100 rounded-box shadow-lg p-5 border border-base-300"><p class="text-sm text-base-content/60">Ingresos del mes</p><p class="text-2xl font-bold mt-2">{{summary()?.kpis?.income ?? 0 | currency:'USD'}}</p>@if (incomeDelta() !== null) { <p class="text-sm text-base-content/60 mt-2">{{incomeDelta() | number:'1.1-1'}} % frente al período anterior</p> }</div>
+    <div class="bg-base-100 rounded-box shadow-lg p-5 border border-base-300"><p class="text-sm text-base-content/60">Ventas registradas del mes</p><p class="text-2xl font-bold mt-2">{{summary()?.kpis?.documents ?? 0 | number}}</p></div>
+    <div class="bg-base-100 rounded-box shadow-lg p-5 border border-base-300"><p class="text-sm text-base-content/60">Ganancias del mes</p><p class="text-2xl font-bold mt-2">{{summary()?.kpis?.profit ?? 0 | currency:'USD'}}</p><p class="text-sm text-base-content/60 mt-2">Según las ventas y sus costos.</p></div>
+  </div>
+}
+}
+@if (canAccessReports()) {
+  <a routerLink="/accounting-reports" class="card bg-base-100 border border-base-300 rounded-box mb-5 shadow-lg hover:border-primary focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 transition-colors">
+    <div class="card-body p-4 sm:p-6 flex-row items-center gap-4">
+      <span class="icon-[tabler--file-spreadsheet] text-primary text-3xl shrink-0" aria-hidden="true"></span>
+      <div class="min-w-0 flex-1">
+        <h2 class="card-title">Reportes contables</h2>
+        <p class="text-sm text-base-content/60 mt-1">Consulta y descarga de documentos por período.</p>
+      </div>
+      <span class="icon-[tabler--arrow-right] text-xl shrink-0" aria-hidden="true"></span>
+    </div>
+  </a>
+}
+@if (authService.isAdmin() && selectedPeriod() && summaryQuery.isSuccess()) {
+  <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+    <h2 class="text-lg font-semibold">Evolución de los ingresos</h2>
+    <p class="text-sm text-base-content/60 mt-1">Selecciona una barra para consultar la fecha y el importe.</p>
+    <div class="h-48 flex items-end gap-1 sm:gap-2 border-b border-base-300 mt-5" role="group" aria-label="Ingresos por día">
+      @for (day of summary()?.salesByDay; track day.date) { <button class="bg-primary flex-1 min-w-0 rounded-t-sm hover:opacity-70 focus:outline-2 focus:outline-primary focus:outline-offset-2" [style.height.%]="day.total > 0 ? (day.total / maxDayTotal()) * 100 : 2" [class.opacity-40]="day.total === 0" [attr.aria-label]="day.date + ': ' + day.total + ' dólares'" [title]="day.date + ': ' + day.total + ' USD'" (click)="selectedDay.set(day)" (mouseenter)="selectedDay.set(day)" (focus)="selectedDay.set(day)"></button> }
+    </div>
+    <p class="mt-4 text-sm min-h-5" aria-live="polite">@if (selectedDay(); as day) { {{day.date + 'T12:00:00' | date:'longDate'}} · Ingresos: {{day.total | currency:'USD'}} } @else { {{range().from}} — {{range().to}} }</p>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 border border-base-300"><h2 class="text-lg font-semibold mb-3">Productos más vendidos</h2>@for (product of summary()?.topProducts; track product.productId) { <div class="flex justify-between gap-3 py-3 border-b border-base-300"><span>{{product.name}}</span><span class="font-semibold shrink-0">{{product.qty | number}} unidades</span></div> } @empty { <p class="text-base-content/60">Sin ventas en el período.</p> }</div>
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 border border-base-300"><h2 class="text-lg font-semibold mb-3">Qué requiere atención</h2><p class="text-sm text-base-content/60">Productos con existencias bajas.</p>@for (product of summary()?.lowStock; track product.productId) { <div class="flex justify-between gap-3 py-3 border-b border-base-300"><span>{{product.name}}</span><span class="badge badge-warning shrink-0">{{product.stock | number}} disponibles</span></div> } @empty { <p class="text-base-content/60 mt-3">Sin alertas de stock.</p> }</div>
+  </div>
+}

@@ -1,0 +1,124 @@
+<app-title [titleDetail]="titleData()"><button
+    class="btn btn-success w-full sm:w-auto"
+    [routerLink]="['/transfers/detail','0']">
+    <span class="icon-[tabler--plus] text-2xl"></span>
+    Nueva transferencia
+  </button></app-title>
+
+<!-- Card: filtros -->
+<app-filter-panel [hasAdditional]="true" [expanded]="isOpen()" (expandedChange)="isOpen.set($event)" [hasSearch]="false" heading="Consultar transferencias">
+<div filterFields><fieldset class="filter-group filter-group--compact"><legend>Transferencia</legend><div class="min-w-0"><div class="filter-label"><span>Estado</span><select class="select w-full" #state [value]="statusFilter()" (change)="setStatus(state.value)"><option value="">Todos</option>@for (option of transferStatusList; track option.status) { <option [value]="option.status">{{ option.title }}</option> }</select></div></div></fieldset><fieldset class="filter-group filter-group--wide"><legend>Periodo</legend><div class="min-w-0"><app-date-range
+        class="lg:col-span-4"
+        (toChange)="setTo($event)"
+        (fromChange)="setFrom($event)"
+        [toSelected]="dateTo()"
+        [fromSelected]="dateFrom()">
+      </app-date-range></div></fieldset></div>
+<div filterActions><span class="text-xs text-base-content/60 mr-auto self-center">Los filtros se aplican al cambiar.</span><button type="button" class="btn btn-warning" (click)="setStatus(''); setFrom(null); setTo(null)" [disabled]="transfersQuery.isFetching()"><span class="icon-[tabler--x] text-lg" aria-hidden="true"></span>Limpiar</button></div>
+</app-filter-panel>
+<!-- /Card: filtros -->
+
+<!-- Card: listado -->
+<div class="bg-base-100 rounded-box border border-base-300 p-4 md:p-6 mb-5">
+<div class="flex flex-col gap-4 p-1">
+
+  
+
+  <app-pagination [currentPage]="transfersQuery.data()?.meta?.page ?? 0"
+    [totalPages]="transfersQuery.data()?.meta?.totalPages!"
+    [totalItems]="transfersQuery.data()?.meta?.total ?? 0"
+    [pageSize]="transfersQuery.data()?.meta?.limit ?? 0"><app-limit paginationLimit class="w-full sm:w-48" [limitInput]="limitPerPage()" (outputLimit)="onNewLimit($event)" /></app-pagination>
+
+  @if(transfersQuery.error()){
+  <app-error-banner
+    [errorBanner]="{message: 'Ocurrió un error inesperado', error: transfersQuery.error()?.name ?? 'Verifique los logs del servidor'}"></app-error-banner>
+  }
+
+  <app-transfer-table
+    [transfers]="transfersQuery.data()?.data ?? []"
+    [isLoading]="transfersQuery.isLoading()"
+    [skeletonLimit]="limitPerPage()"
+    [rowOffset]="((transfersQuery.data()?.meta?.page ?? 1) - 1) * (transfersQuery.data()?.meta?.limit ?? 0)"></app-transfer-table>
+
+  <app-pagination [currentPage]="transfersQuery.data()?.meta?.page ?? 0"
+    [totalPages]="transfersQuery.data()?.meta?.totalPages!"
+    [totalItems]="transfersQuery.data()?.meta?.total ?? 0"
+    [pageSize]="transfersQuery.data()?.meta?.limit ?? 0"></app-pagination>
+
+</div>
+</div>
+<!-- /Card: listado -->
+
+@if(idSelected() > 0){
+
+  <!-- Floating Action Bar Contextual -->
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn">
+    <!-- Info del registro seleccionado -->
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedRowNumber() }}</span>
+    </div>
+
+    <!-- Botón Vista Previa -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="my_modal_3.showModal()"
+      title="Vista Previa"
+      aria-label="Vista Previa">
+      <span class="icon-[tabler--eye] text-xl sm:text-lg text-primary"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Ver</span>
+    </button>
+
+    @if(canWrite() && transferState() === transferStatus.PENDING){
+      <!-- Botón Editar: navega a la página de detalle -->
+      <a
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+        [routerLink]="['/transfers/detail', idSelected()]"
+        title="Modificar"
+        aria-label="Modificar">
+        <span class="icon-[tabler--edit] text-xl sm:text-lg text-info"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+      </a>
+
+      <!-- Botón Cancelar -->
+      <button
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+        onclick="actionModal.showModal()"
+        (click)="openActionModal('Cancelar la transferencia', 'cancel')"
+        title="Cancelar"
+        aria-label="Cancelar">
+        <span class="icon-[fluent--dismiss-circle-12-regular] text-xl sm:text-lg text-error"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Cancelar</span>
+      </button>
+    }
+
+    @if(canWrite() && transferState() === transferStatus.COMPLETED){
+      <!-- Botón Revertir: devuelve el stock a la zona origen -->
+      <button
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+        onclick="actionModal.showModal()"
+        (click)="openActionModal('Revertir la transferencia (el stock vuelve a la zona origen)', 'revert')"
+        title="Revertir"
+        aria-label="Revertir">
+        <span class="icon-[tabler--arrow-back-up] text-xl sm:text-lg"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Revertir</span>
+      </button>
+    }
+
+    <!-- Botón Deseleccionar / Cerrar -->
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="deselectTransfer()"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+
+  <app-quick-view [transfer]="transfer()"></app-quick-view>
+}
+
+@if(idSelected() > 0){
+<app-action-modal [titleAction]="modalTitleAction()"></app-action-modal>
+}
+
+<app-alert />

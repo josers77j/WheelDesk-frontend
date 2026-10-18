@@ -1,0 +1,169 @@
+<a class="btn btn-ghost mb-2" routerLink="/quotations/list"><span class="icon-[topcoat--back-light]"></span>Regresar</a>
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300"><h1 class="font-bold text-4xl">{{ editing ? 'Modificar cotización' : 'Nueva cotización' }}</h1></div>
+@if (loading()) { <p role="status">Cargando cotización…</p> } @else if (loadFailed()) { <div class="alert alert-error">No se pudo cargar la cotización. Vuelve al listado e intenta nuevamente.</div> } @else {
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300" [formGroup]="header">
+ <h2 class="fieldset-legend">Cliente (opcional)</h2>
+ <div class="flex flex-wrap items-center gap-2 mb-4"><div class="tabs tabs-box" role="tablist" aria-label="Tipo de cliente">
+  <button class="tab" type="button" role="tab" [class.tab-active]="mode() === 'EXISTING'" [attr.aria-selected]="mode() === 'EXISTING'" (click)="setMode('EXISTING')">Existente</button>
+  <button class="tab" type="button" role="tab" [class.tab-active]="mode() === 'NEW'" [attr.aria-selected]="mode() === 'NEW'" (click)="setMode('NEW')">Nuevo</button>
+ </div>@if (mode() === 'NEW') { <button type="button" class="btn btn-success btn-sm ml-auto" (click)="createCustomer()"><span class="icon-[gridicons--create] text-xl"></span>Crear cliente</button> }</div>
+ @if (mode() === 'EXISTING') { <app-combobox-form-control [valuesResource]="customerOptions()" [selectedValue]="customerValue()" placeholderInput="Buscar cliente" [loading]="customerQuery.isFetching() || customerLoading()" (click)="customerTouched.set(true)" (searchTextChange)="customerSearch.set($event); customerTouched.set(true)" (valuesOutput)="chooseCustomer($event)" /> }
+ <details class="collapse group bg-base-100 border border-base-300 mt-3">
+  <summary class="collapse-title font-semibold flex items-center justify-between"><span>Información del cliente</span><span class="icon-[jam--chevron-down] text-xl transition-transform duration-200 group-open:rotate-180" aria-hidden="true"></span></summary>
+  <div class="collapse-content text-sm">
+   @if (customerLoading()) { <p class="flex items-center justify-center gap-2 py-8 text-sm opacity-70"><span class="loading loading-spinner loading-xs"></span>Cargando cliente…</p> }
+   @else { @if (customer(); as client) {
+                      <div class="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-3">
+                        <div class="md:col-span-6 bg-base-200 rounded-lg p-3 flex items-start gap-3">
+                          <div class="min-w-0 flex-1">
+                            <p class="text-sm opacity-60">Nombre</p>
+                            <p class="text-xl font-semibold break-words" data-testid="customer-name">
+                              {{ client.name }}
+                            </p>
+                          </div>
+                          @if (missingFields(client); as missing) {
+                            @if (missing.length > 0) {
+                              <div class="tooltip shrink-0 mt-1"
+                                [attr.data-tip]="'Faltan: ' + missing.join(', ')">
+                                <span class="icon-[tabler--alert-triangle] text-warning text-lg"></span>
+                              </div>
+                            }
+                          }
+                        </div>
+                        <div class="md:col-span-4 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Nombre comercial</p>
+                          <p class="font-medium break-words">{{ client.taxInfo?.tradeName || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Correo</p>
+                          <p class="font-medium break-all">{{ client.email || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-6 bg-base-200 rounded-lg p-3">
+                          <p class="text-sm opacity-60">Dirección</p>
+                          <p class="font-medium whitespace-pre-wrap break-words">{{ client.address || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-4 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Actividad económica</p>
+                          <p class="font-medium break-words">
+                            {{ client.taxInfo?.economicActivity?.name || '—' }}
+                            @if (client.taxInfo?.economicActivity?.code) {
+                              <span class="opacity-60">({{ client.taxInfo?.economicActivity?.code }})</span>
+                            }
+                          </p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Tipo de documento</p>
+                          <p class="font-medium break-words">{{ client.taxInfo?.taxDocumentType?.name || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 flex items-start gap-2 min-w-0">
+                          <div class="min-w-0 flex-1">
+                            <p class="text-sm opacity-60">Documento</p>
+                            <p class="font-medium break-all" data-testid="customer-document">
+                              {{ client.taxInfo?.taxDocumentNumber || '—' }}
+                            </p>
+                          </div>
+                          @if (client.taxInfo?.taxDocumentNumber) {
+                            <button type="button" class="btn btn-xs btn-ghost shrink-0 -mr-1 -mt-1"
+                              title="Copiar" aria-label="Copiar número de documento"
+                              [attr.data-copy]="client.taxInfo?.taxDocumentNumber"
+                              onclick="void navigator.clipboard.writeText(this.dataset.copy)">
+                              <span class="icon-[tabler--copy]"></span>
+                            </button>
+                          }
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">NRC</p>
+                          <p class="font-medium break-all">{{ client.taxInfo?.nrc || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Teléfono</p>
+                          <p class="font-medium break-words">{{ client.phone || '—' }}</p>
+                        </div>
+
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Tipo</p>
+                          <p class="font-medium">
+                            {{ client.customerType === 'LEGAL' ? 'Jurídico' : client.customerType === 'NATURAL' ? 'Natural' : '—' }}
+                          </p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Contribuyente</p>
+                          <p class="font-medium">{{ client.isTaxPayer ? 'Sí' : 'No' }}</p>
+                        </div>
+                        <div class="md:col-span-2 bg-base-200 rounded-lg p-3 min-w-0">
+                          <p class="text-sm opacity-60">Distrito</p>
+                          <p class="font-medium break-words">{{ client.district?.name || '—' }}</p>
+                        </div>
+                        <div class="md:col-span-6 flex justify-end gap-1 pt-1">
+                          <button class="btn btn-xs btn-ghost" type="button" (click)="editCustomer()"
+                            title="Modificar" aria-label="Modificar">
+                            <span class="icon-[akar-icons--edit] text-xl text-info"></span>
+                          </button>
+                        </div>
+                      </div>
+   } @else if (!customerValue() && header.controls.customerName.value) {
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-3"><div class="md:col-span-6 bg-base-200 rounded-lg p-3"><p class="text-sm opacity-60">Destinatario guardado en la cotización</p><p class="text-xl font-semibold break-words">{{ header.controls.customerName.value }}</p><p class="font-medium whitespace-pre-wrap break-words">{{ header.controls.customerAddress.value || '—' }}</p></div></div>
+   } @else { <p class="py-8 text-center text-sm opacity-60">{{ 'Sin cliente agregado. Puedes seleccionar o crear uno; es opcional.' }}</p> }
+   }
+  </div>
+ </details>
+ <fieldset class="fieldset mt-3"><legend class="fieldset-legend">Observaciones</legend><textarea class="textarea w-full" formControlName="notes" placeholder="Observaciones de la cotización"></textarea></fieldset>
+</div>
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 flex flex-col gap-3 border border-base-300" [formGroup]="header">
+ <div class="flex flex-col sm:flex-row sm:items-center gap-3"><h2 class="text-2xl font-bold sm:mr-auto">Detalle de productos</h2><button type="button" class="btn btn-success w-full sm:w-auto" (click)="openItem()"><span class="icon-[gridicons--create] text-2xl"></span>Agregar producto</button></div>
+ <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-200 mt-3"><table class="table table-zebra w-full cursor-pointer"><thead><tr><th>#</th><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th><th>Descuento</th><th>Total de línea</th></tr></thead><tbody>
+ @for (line of lines(); track line.productId; let i = $index) { <tr (click)="selectedLine.set(selectedLine() === i ? null : i)" [class.bg-gray-800]="selectedLine() === i" [class.text-white]="selectedLine() === i" class="transition-all ease-in delay-50 cursor-pointer"><td>{{ i+1 }}</td><td>{{ line.productName }}</td><td>{{ line.quantity }}</td><td>{{ line.unitPrice | currency: 'USD' }}</td><td>@if (previewReady()) { {{ preview.data()?.details?.[i]?.subtotal | currency: 'USD' }} } @else { — }</td><td>@if (previewReady()) { {{ preview.data()?.details?.[i]?.discountAmount | currency: 'USD' }} } @else { — }</td><td>@if (previewReady()) { {{ preview.data()?.details?.[i]?.amountAfterDiscount | currency: 'USD' }} } @else { — }</td></tr> } @empty { <tr><th colspan="7">No hay productos agregados</th></tr> }
+ </tbody></table></div>
+
+ <fieldset class="fieldset flex-1 min-w-0"><legend class="fieldset-legend">Descuento global (opcional)</legend><div class="flex gap-2"><select class="select flex-1 min-w-0" formControlName="discountType"><option [ngValue]="null">Sin descuento</option><option [ngValue]="discountTypes.USD">$ Fijo</option><option [ngValue]="discountTypes.PERCENT">% Porcentaje</option></select><input class="input w-28" type="number" min="0" step="0.01" placeholder="0.00" formControlName="discountValue" /></div></fieldset>
+ <p class="text-sm opacity-60">Cotizar no reserva ni descuenta existencias.</p>
+</div>
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+ @if (preview.isFetching() || !previewCurrent()) { <p class="my-4" role="status">Calculando importes…</p> }
+ @if (preview.error(); as error) { <app-query-error [error]="error" [showReset]="false" (retry)="preview.refetch()" /> }
+ @if (previewReady()) { @if (preview.data(); as totals) { <div class="flex flex-col gap-1"><div class="flex justify-between"><span class="opacity-70">Subtotal</span><span class="font-semibold">{{ totals.header.subtotal | currency: 'USD' }}</span></div><div class="flex justify-between"><span class="opacity-70">Descuento global</span><span class="font-semibold">{{ totals.header.globalDiscount | currency: 'USD' }}</span></div><div class="flex justify-between"><span class="opacity-70">IVA</span><span class="font-semibold">{{ totals.header.iva | currency: 'USD' }}</span></div><div class="flex justify-between text-xl font-bold"><span>Total</span><span>{{ totals.header.total | currency: 'USD' }}</span></div></div> } }
+ <div class="flex justify-end gap-2 mt-4"><button class="btn btn-success font-bold py-2 px-4 rounded-field" type="button" [disabled]="!canSave()" (click)="requestSave()">{{ saving() ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear cotización' }}</button></div>
+</div>
+}
+@let selectedIndex = selectedLine();
+@if (selectedIndex !== null) {
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn border-base-300">
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedIndex + 1 }}</span>
+    </div>
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="openItem(selectedIndex)"
+      title="Modificar"
+      aria-label="Modificar">
+      <span class="icon-[akar-icons--edit] text-xl sm:text-lg text-info"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+    </button>
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="removeItem(selectedIndex)"
+      title="Eliminar"
+      aria-label="Eliminar">
+      <span class="icon-[material-symbols--delete] text-xl sm:text-lg text-error"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Remover</span>
+    </button>
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="selectedLine.set(null)"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+}
+
+<dialog #itemDialog class="modal"><div class="modal-box w-11/12 max-w-5xl"><h3 class="text-lg font-bold mb-4">{{ editingLine() === null ? 'Agregar producto' : 'Modificar producto' }}</h3><form [formGroup]="itemForm" (ngSubmit)="addItem()">
+ <app-combobox-form-control [valuesResource]="productQuery.data() ?? []" [selectedValue]="selectedProduct()" placeholderInput="Buscar producto" [loading]="productQuery.isFetching()" (click)="productTouched.set(true)" (searchTextChange)="productSearch.set($event); productTouched.set(true)" (valuesOutput)="selectedProduct.set($event)" />
+ <div class="grid grid-cols-1 md:grid-cols-6 gap-3 mt-4"><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Cantidad</legend><input class="input w-full" type="number" min="1" step="1" formControlName="quantity" /></fieldset><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Precio de venta</legend><input class="input w-full" type="number" min="0" step="0.01" formControlName="unitPrice" /></fieldset><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Tipo descuento</legend><select class="select w-full" formControlName="discountType"><option [ngValue]="null">Ninguno</option><option [ngValue]="discountTypes.USD">$</option><option [ngValue]="discountTypes.PERCENT">%</option></select></fieldset><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Descuento $</legend><input class="input w-full" type="number" min="0" step="0.01" placeholder="0.00" formControlName="discountValue" /></fieldset></div>
+ <div class="modal-action"><button class="btn" type="button" (click)="itemDialog.close()">Cancelar</button><button class="btn btn-success" type="submit">{{ editingLine() === null ? 'Agregar' : 'Guardar' }}</button></div>
+</form></div>
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="itemDialog.close()">Cerrar</button></form>
+</dialog>
+<app-customer-form-modal (saved)="customerSaved($event)" />
+<app-confirm-action-modal [title]="editing ? 'Guardar cambios de cotización' : 'Crear cotización'" message="¿Deseas guardar esta cotización? No se reservará ni descontará inventario." confirmLabel="Guardar" (confirmed)="save()" />
+<app-alert />

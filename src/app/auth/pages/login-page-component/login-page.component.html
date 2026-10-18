@@ -1,0 +1,48 @@
+<form
+  class="flex flex-col gap-3"
+  [formGroup]="loginForm"
+  (ngSubmit)="onSubmit()"
+>
+  <label class="label" for="login-email">Correo</label>
+  <input
+    id="login-email"
+    type="email"
+    class="input w-full"
+    placeholder="mail@site.com"
+    formControlName="email"
+  />
+  <div class="validator-hint hidden">error message</div>
+
+  <label class="label" for="login-password">Contraseña</label>
+  <input
+    id="login-password"
+    type="password"
+    class="input w-full"
+    placeholder="*******"
+    formControlName="password"
+  />
+
+  <button
+    [disabled]="isPosting() || !loginForm.valid"
+    type="submit"
+    class="btn btn-primary mt-4 flex items-center justify-center gap-2"
+  >
+    @if (isPosting()) {
+      <span class="loading loading-spinner loading-sm"></span>
+      <span>Iniciando sesión...</span>
+    } @else {
+      <span>Ingresar</span>
+    }
+  </button>
+</form>
+
+
+
+@if (hasErrors()) {
+  <div
+    role="alert"
+    class="alert alert-error animate-fadeIn fixed top-5 right-5 w-70"
+  >
+    <span>{{ errorMessage() }}</span>
+  </div>
+}

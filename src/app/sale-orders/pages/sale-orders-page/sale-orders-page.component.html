@@ -1,0 +1,308 @@
+<section class="card bg-base-100 border border-base-300 mb-5">
+  <div class="card-body p-4 md:p-6 flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+    <div><h1 class="text-2xl font-bold">Listado de {{ titleData().name }}</h1>
+      <p class="text-sm text-base-content/60 mt-1">Total de {{ titleData().name }} <span class="font-semibold text-primary">{{ titleData().count }}</span></p>
+    </div>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+  @if (canCreateSale()) {
+  <button
+    class="btn btn-success"
+    [routerLink]="['/sale-orders/detail', '0']">
+    <span class="icon-[tabler--plus] text-2xl"></span>
+    Nueva venta
+  </button>
+  }
+    <button
+      class="btn btn-info"
+      (click)="downloadExcel()"
+      [disabled]="(saleOrderQuery.data()?.meta?.total ?? 0) === 0"
+      title="Excel con el resumen de ventas del periodo">
+      <span class="icon-[tabler--file-spreadsheet] text-2xl"></span>
+      Excel
+    </button>
+    <button
+      class="btn btn-info"
+      (click)="downloadZip()"
+      [disabled]="zipDownloading() || (saleOrderQuery.data()?.meta?.total ?? 0) === 0"
+      title="ZIP con PDFs y JSON del periodo">
+      @if (zipDownloading()) {
+        <span class="loading loading-spinner loading-sm"></span>
+        Preparando...
+      } @else {
+        <span class="icon-[tabler--file-zip] text-2xl"></span>
+        ZIP
+      }
+    </button>
+  </div>
+  </div>
+</section>
+
+<!-- Card: filtros y acciones -->
+<app-filter-panel [hasAdditional]="true" [expanded]="isOpen()" (expandedChange)="isOpen.set($event)" heading="Consultar registros">
+<div filterSearch><div class="filter-label"><span>Código, documento o cliente</span><label class="input w-full">
+        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </g>
+        </svg>
+        <input
+          #txtSearch
+          type="text"
+          placeholder="Buscar por código, documento o cliente"
+          (input)="setSearch(txtSearch.value)"
+          [value]="this.formSearchParams().search ?? ''"
+        />
+        @if ((this.formSearchParams().search ?? '') !== '') {
+          <button
+            type="button"
+            class="btn btn-xs btn-circle btn-ghost shrink-0"
+            (click)="setSearch('')"
+            aria-label="Limpiar">✕</button>
+        }
+      </label></div></div>
+<div filterFields><fieldset class="filter-group "><legend>Documento</legend><div class="filter-pair"><div class="filter-label"><span>Tipo de documento</span><select
+        class="select w-full"
+        name="dteType"
+        id="dteType"
+        #selDteType
+        (change)="setDteTypeChip(selDteType.value)"
+      >
+        <option value="" [selected]="(formSearchParams().dteType ?? '') === ''">
+          Todos
+        </option>
+        <option value="01" [selected]="formSearchParams().dteType === '01'">
+          Consumidor final
+        </option>
+        <option value="03" [selected]="formSearchParams().dteType === '03'">
+          Crédito fiscal
+        </option>
+      </select></div><div class="filter-label"><span>Estado</span><select
+        class="select w-full"
+        name="status"
+        id="status"
+        [value]="this.formSearchParams().status ?? ''"
+        (change)="setStatus($event)"
+      >
+        <option value>Estado sin seleccionar</option>
+        @for (option of saleOrderStatusList; track option.status) {
+          <option
+            [selected]="this.formSearchParams().status === option.status"
+            [value]="option.status"
+          >
+            {{ option.title }}
+          </option>
+        }
+      </select></div></div></fieldset><fieldset class="filter-group "><legend>Importe</legend><div class="filter-pair"><label class="form-control flex flex-col gap-2"><span class="text-xs text-base-content/60">Monto desde</span><span class="input w-full">
+        <input
+          #txtMinTotal
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Monto desde"
+          aria-label="Monto desde"
+          (input)="setMinTotal(txtMinTotal.value)"
+          [value]="this.formSearchParams().minTotal ?? ''"
+        />
+      </span></label><label class="form-control flex flex-col gap-2"><span class="text-xs text-base-content/60">Monto hasta</span><span class="input w-full">
+        <input
+          #txtMaxTotal
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Monto hasta"
+          aria-label="Monto hasta"
+          (input)="setMaxTotal(txtMaxTotal.value)"
+          [value]="this.formSearchParams().maxTotal ?? ''"
+        />
+      </span></label></div></fieldset><fieldset class="filter-group filter-group--wide"><legend>Periodo</legend><div class="min-w-0"><app-date-range
+        class="lg:col-span-2"
+        (toChange)="setTo($event)"
+        (fromChange)="setFrom($event)"
+        [toSelected]="formSearchParams().to"
+        [fromSelected]="formSearchParams().from"
+      >
+      </app-date-range></div></fieldset></div>
+<div filterActions><button type="button" class="btn btn-primary" (click)="onSearch()" [disabled]="saleOrderQuery.isFetching()"><span class="icon-[tabler--search] text-lg" aria-hidden="true"></span>Buscar</button><button type="button" class="btn btn-warning" (click)="onResetFilters()" [disabled]="saleOrderQuery.isFetching()"><span class="icon-[tabler--x] text-lg" aria-hidden="true"></span>Limpiar</button></div>
+</app-filter-panel>
+<!-- /Card: filtros y acciones -->
+
+<!-- Card: listado de ventas -->
+<div class="bg-base-100 rounded-box border border-base-300 p-4 md:p-6 mb-5">
+<div class="flex flex-col gap-4 p-1">
+  @if (saleOrderQuery.isPending()) {    <app-skeleton [limit]="limitPerPage()"></app-skeleton>
+  }
+
+  @if (saleOrderQuery.error(); as queryError) {
+    <app-query-error
+      [error]="$any(queryError)"
+      (retry)="retryList()"
+      (resetFilters)="onResetFilters()"
+    />
+  } @else {
+    <app-pagination
+      [currentPage]="saleOrderQuery.data()?.meta?.page ?? 0"
+      [totalPages]="saleOrderQuery.data()?.meta?.totalPages!"
+      [totalItems]="saleOrderQuery.data()?.meta?.total ?? 0"
+      [pageSize]="saleOrderQuery.data()?.meta?.limit ?? 0"
+    ><app-limit paginationLimit class="w-full sm:w-48" [limitInput]="limitPerPage()" (outputLimit)="onNewLimit($event)" /></app-pagination>
+
+    @if (saleOrderQuery.data(); as data) {
+      <app-sale-order-table
+        [saleOrders]="data.data"
+        [isLoading]="saleOrderQuery.isLoading()"
+        [skeletonLimit]="limitPerPage()"
+        [rowOffset]="(data.meta.page - 1) * data.meta.limit"
+      ></app-sale-order-table>
+    }
+
+    <app-pagination
+      [currentPage]="saleOrderQuery.data()?.meta?.page ?? 0"
+      [totalPages]="saleOrderQuery.data()?.meta?.totalPages!"
+      [totalItems]="saleOrderQuery.data()?.meta?.total ?? 0"
+      [pageSize]="saleOrderQuery.data()?.meta?.limit ?? 0"
+    ></app-pagination>
+  }
+</div>
+</div>
+<!-- /Card: listado de ventas -->
+
+@if (idSelected() > 0) {
+  <!-- Píldora solo lectura: únicamente vista previa -->
+  <div
+    class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn"
+  >
+    <div
+      class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1"
+    >
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedRowNumber() }}</span>
+    </div>
+
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="sale_order_preview.showModal()"
+      title="Vista Previa"
+      aria-label="Vista Previa"
+    >
+      <span class="icon-[tabler--eye] text-xl sm:text-lg text-primary"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Ver</span>
+    </button>
+
+    @if (authService.isAdmin()) {
+      <button
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+        (click)="activityModal()?.open()"
+        title="Ver actividad de la orden"
+        aria-label="Actividad"
+      >
+        <span class="icon-[tabler--activity] text-xl sm:text-lg text-primary"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Actividad</span>
+      </button>
+    }
+
+    @if (canCreateSale()) {
+      @if (saleOrderPreviewData(); as selectedOrder) {
+<button type="button" class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5" title="Reenviar documentos por correo" aria-label="Reenviar documentos por correo" [disabled]="emailActions()?.busy() || !selectedOrder.document" (click)="emailActions()?.open()">
+  <span class="icon-[tabler--mail] text-xl sm:text-lg text-primary"></span><span class="hidden sm:inline text-xs sm:text-sm">Correo</span>
+</button>
+
+}
+    }
+
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="sale_order_document_choice.showModal()"
+      [disabled]="downloadingDocs() || !saleOrderPreviewData()?.document"
+      title="Descargar originales de la venta"
+      aria-label="Documento"
+    >
+      @if (downloadingDocs()) {
+        <span class="loading loading-spinner loading-xs"></span>
+      } @else {
+        <span class="icon-[tabler--file-download] text-xl sm:text-lg text-primary"></span>
+      }
+      <span class="hidden sm:inline text-xs sm:text-sm">Documento</span>
+    </button>
+
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="deselectSaleOrder()"
+      title="Deseleccionar"
+      aria-label="Deseleccionar"
+    >
+      ✕
+    </button>
+  </div>
+
+  @if (saleOrderPreviewData(); as selectedOrder) {
+    <app-sale-email-actions #emailActions [order]="selectedOrder" />
+  }
+  <app-sale-order-quick-view [order]="saleOrderPreviewData()"></app-sale-order-quick-view>
+  <app-sale-order-activity
+    [orderId]="idSelected()"
+    [orderNumber]="saleOrderPreviewData()?.documentNumber ?? ''"
+>
+  </app-sale-order-activity>
+}
+
+<dialog id="sale_order_document_choice" class="modal" aria-labelledby="document-download-title">
+  <div class="modal-box w-11/12 max-w-lg p-0 border border-base-300">
+    <header class="flex items-start justify-between gap-4 px-5 pt-5 sm:px-7 sm:pt-7">
+      <div><h3 id="document-download-title" class="text-xl font-bold">Descargar documentos</h3><p class="text-sm text-base-content/60 mt-1">Obtén los archivos originales de esta factura.</p></div>
+      <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost shrink-0" aria-label="Cerrar">✕</button></form>
+    </header>
+    <div class="mx-5 mt-5 sm:mx-7 border-l-3 border-primary rounded-r-lg bg-base-200 px-4 py-3">
+      <p class="font-semibold">Factura</p><p class="text-xs text-base-content/60 break-all mt-1">{{ saleOrderPreviewData()?.document?.externalId || saleOrderPreviewData()?.documentNumber }}</p>
+    </div>
+    <div class="px-5 sm:px-7 mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <button type="button" class="btn btn-outline w-full" [disabled]="previewLoading() || !saleOrderPreviewData()?.document?.pdfKey" (click)="previewInvoicePdf()">
+        @if (previewLoading()) { <span class="loading loading-spinner loading-sm"></span> }
+        <span class="icon-[tabler--eye] text-lg"></span>Ver PDF
+      </button>
+      <button type="button" class="btn btn-outline w-full" [disabled]="previewLoading() || !saleOrderPreviewData()?.document?.jsonKey" (click)="previewInvoiceJson()">
+        @if (previewLoading()) { <span class="loading loading-spinner loading-sm"></span> }
+        <span class="icon-[tabler--code] text-lg"></span>Ver JSON
+      </button>
+    </div>
+    <fieldset class="fieldset px-5 sm:px-7 mt-4 pb-5">
+      <legend class="fieldset-legend">¿Qué quieres descargar?</legend>
+      <div class="flex flex-col gap-3">
+        <label class="label cursor-pointer justify-start border border-base-300 rounded-box p-4 gap-3 has-checked:border-primary has-checked:bg-primary/5">
+          <input type="radio" name="document-choice" class="radio radio-primary" [checked]="documentChoice() === 'pdf'" (change)="documentChoice.set('pdf')" />
+          <span class="icon-[tabler--file-type-pdf] text-2xl text-primary shrink-0"></span>
+          <span><span class="font-semibold block">PDF · Factura</span><span class="text-xs text-base-content/60 block mt-1 whitespace-normal">Documento visual de la factura.</span></span>
+        </label>
+        <label class="label cursor-pointer justify-start border border-base-300 rounded-box p-4 gap-3 has-checked:border-primary has-checked:bg-primary/5">
+          <input type="radio" name="document-choice" class="radio radio-primary" [checked]="documentChoice() === 'json'" (change)="documentChoice.set('json')" />
+          <span class="icon-[tabler--code] text-2xl text-primary shrink-0"></span>
+          <span><span class="font-semibold block">JSON · Datos</span><span class="text-xs text-base-content/60 block mt-1 whitespace-normal">Archivo original con los datos de la factura.</span></span>
+        </label>
+        <label class="label cursor-pointer justify-start border border-base-300 rounded-box p-4 gap-3 has-checked:border-primary has-checked:bg-primary/5">
+          <input type="radio" name="document-choice" class="radio radio-primary" [checked]="documentChoice() === 'zip'" (change)="documentChoice.set('zip')" />
+          <span class="icon-[tabler--file-zip] text-2xl text-primary shrink-0"></span>
+          <span><span class="font-semibold block">PDF + JSON</span><span class="text-xs text-base-content/60 block mt-1 whitespace-normal">Ambos documentos juntos en un archivo ZIP.</span></span>
+        </label>
+      </div>
+    </fieldset>
+    <div class="modal-action border-t border-base-300 m-0 px-5 py-4 sm:px-7 flex-col-reverse sm:flex-row sm:justify-between">
+      <form method="dialog"><button class="btn btn-ghost w-full sm:w-auto">Cancelar</button></form>
+      <button class="btn btn-primary w-full sm:w-auto" (click)="confirmDocumentDownload()"><span class="icon-[tabler--download] text-lg"></span>Descargar documentos</button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>cerrar</button></form>
+</dialog>
+
+<app-alert />
+
+<app-pdf-preview />
+
+<dialog #jsonPreviewDialog class="modal" (close)="closeJsonPreview()">
+  <section class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-4xl">
+    <header class="flex justify-between gap-3">
+      <h2 class="font-semibold">JSON original</h2>
+      <button type="button" class="btn btn-sm btn-circle btn-ghost" aria-label="Cerrar JSON" (click)="closeJsonPreview()">✕</button>
+    </header>
+    <pre class="mt-4 p-4 bg-base-200 rounded-box max-h-[65dvh] overflow-auto text-xs whitespace-pre-wrap break-words">{{ jsonPreviewText() }}</pre>
+  </section>
+  <form method="dialog" class="modal-backdrop"><button type="submit" (click)="closeJsonPreview()" aria-label="Cerrar JSON al tocar fuera">Cerrar</button></form>
+</dialog>

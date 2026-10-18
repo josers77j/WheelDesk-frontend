@@ -1,0 +1,7 @@
+@if(providerResource.isLoading()){
+<app-form-skeleton></app-form-skeleton>
+}
+
+@if(providerResource.value()){
+<app-provider-detail [provider]="providerResource.value()!"></app-provider-detail>
+}

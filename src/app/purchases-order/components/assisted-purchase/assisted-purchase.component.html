@@ -1,0 +1,587 @@
+<button
+  class="btn btn-ghost mb-3"
+  routerLink="/purchase-orders/list"
+  type="button"
+  [disabled]="locked()"
+>
+  ← Regresar
+</button>
+<section class="card bg-base-100 border border-base-content/15 purchase-outline p-5 sm:p-6 mb-5">
+  <h1 class="text-2xl font-bold">
+    {{
+      isEditing()
+        ? "Orden de compra #" + editingOrder()?.documentNumber
+        : "Nueva orden de compra"
+    }}
+  </h1>
+  <p class="text-sm text-base-content/60 mt-1">
+    La compra se prepara, revisa y guarda antes de aprobar el ingreso al
+    inventario.
+  </p>
+</section>
+<div
+  class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start"
+>
+  <div class="min-w-0 flex flex-col gap-5">
+    @if (!isEditing()) {
+      <section class="card bg-base-100 border border-base-content/15 purchase-outline p-5">
+        <h2 class="font-semibold text-lg">Modalidad de compra</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+          @for (option of [{value:'MANUAL',label:'Compra manual',detail:'Ingreso directo',icon:'icon-[tabler--pencil]'}, {value:'DOCUMENT',label:'Desde documento',detail:'Factura JSON',icon:'icon-[tabler--file-invoice]'}]; track option.value) {
+            <button type="button" class="btn h-auto min-h-16 justify-start whitespace-normal text-left p-4" [class.border-primary]="mode() === option.value" [class.selection-active]="mode() === option.value" [attr.aria-pressed]="mode() === option.value" [disabled]="locked()" (click)="switchMode(option.value === 'MANUAL' ? 'MANUAL' : 'DOCUMENT')">
+              <span [class]="option.icon + ' text-xl shrink-0'"></span><span class="flex-1"><strong class="block">{{ option.label }}</strong><span class="block text-xs font-normal text-base-content/60 mt-1">{{ option.detail }}</span></span>
+              @if (mode() === option.value) { <span class="icon-[tabler--check] text-primary"></span> }
+            </button>
+          }
+        </div>
+        <p class="text-sm text-base-content/60 mt-3">
+          El cambio de modalidad requiere confirmación.
+        </p>
+      </section>
+    }
+    @if (!isEditing() && mode() === "DOCUMENT") {
+      <section class="card bg-base-100 border border-base-content/15 purchase-outline p-5">
+        <h2 class="font-semibold text-lg">Documentos de compra</h2>
+        <p class="text-sm text-base-content/60 mt-1">
+          El JSON permite preparar las líneas. El PDF se conserva como respaldo.
+        </p>
+        <div class="border border-dashed border-base-content/30 rounded-box bg-base-200/30 p-5 mt-4 text-center" [class.border-primary]="draggingFiles()" [class.selection-active]="draggingFiles()" (dragover)="$event.preventDefault(); draggingFiles.set(true)" (dragleave)="draggingFiles.set(false)" (drop)="filesDropped($event)">
+          <span class="icon-[tabler--cloud-upload] text-3xl text-primary"></span>
+          <p class="font-medium mt-2">{{ pdf() || json() ? 'Agregar o reemplazar documento' : 'Arrastrar PDF o JSON aquí' }}</p>
+          <p class="text-xs text-base-content/60 mt-1">Máximo un archivo por formato · 512 KB cada uno</p>
+          <label class="btn btn-outline mt-4 w-full sm:w-auto"><span class="icon-[tabler--paperclip]"></span>Seleccionar archivos<input class="sr-only" type="file" accept=".pdf,.json" multiple (change)="filesChanged($event)" [disabled]="locked()" /></label>
+        </div>
+        @if (attempted() && !json()) {
+          <p class="text-error text-xs" role="alert">
+            * Obligatorio: adjunte el JSON de la factura.
+          </p>
+        }
+        @if (pdf(); as file) {
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <span class="text-sm break-all flex-1">PDF · {{ file.name }}</span
+            ><button class="btn btn-sm" (click)="previewFile('PDF')">Ver</button
+            ><button
+              class="btn btn-sm btn-ghost"
+              (click)="removeFile('PDF')"
+              [disabled]="locked()"
+              aria-label="Quitar PDF"
+            >
+              ✕
+            </button>
+          </div>
+        }
+        @if (json(); as file) {
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <span class="text-sm break-all flex-1">JSON · {{ file.name }}</span
+            ><button class="btn btn-sm" (click)="previewFile('JSON')">
+              Ver</button
+            ><button
+              class="btn btn-sm btn-ghost"
+              (click)="removeFile('JSON')"
+              [disabled]="locked()"
+              aria-label="Quitar JSON"
+            >
+              ✕
+            </button>
+          </div>
+        }
+        @if (pdf()) {
+          <label class="label flex items-start gap-3 mt-4"
+            ><input
+              class="checkbox checkbox-primary shrink-0"
+              [class.checkbox-error]="attempted() && !pdfConfirmed()"
+              type="checkbox"
+              [ngModel]="pdfConfirmed()"
+              (ngModelChange)="pdfConfirmed.set($event); markChanged()"
+              [disabled]="locked()"
+            /><span class="whitespace-normal text-sm"
+              >Se verificó que PDF y JSON corresponden a la misma factura.
+              @if (attempted() && !pdfConfirmed()) {
+                <span class="text-error">* Obligatorio</span>
+              }
+            </span></label
+          >
+        }
+        @if (json() && !interpretationHintDismissed() && !sourceReady()) {
+          <div role="status" class="alert alert-info alert-soft mt-5 flex items-start gap-3">
+            <span class="icon-[tabler--info-circle] text-xl shrink-0 mt-0.5" aria-hidden="true"></span>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold break-words">Documentos listos para interpretar</p>
+              <p class="text-sm break-words mt-1">El siguiente paso es seleccionar «Interpretar JSON» para completar los datos de la compra. Después, se requiere revisar la información obtenida antes de guardar.</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm btn-square shrink-0" aria-label="Cerrar aviso de interpretación" (click)="interpretationHintDismissed.set(true)">
+              <span class="icon-[tabler--x]" aria-hidden="true"></span>
+            </button>
+          </div>
+        }
+        <div class="mt-5 self-start w-full sm:w-auto">
+        <button
+          class="btn btn-primary w-full sm:w-auto"
+          (click)="interpret()"
+          [disabled]="locked() || !json()"
+        >
+          @if (interpreting()) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          <span class="icon-[tabler--search]"></span>Interpretar JSON
+        </button>
+        </div>
+        @if (sourceReady()) {
+          <p class="text-sm mt-4">
+            Se prepararon {{ rows().length }} líneas. Cantidades y costos se
+            conservan como en la factura.
+          </p>
+        }
+      </section>
+    }
+    <section class="card bg-base-100 border border-base-content/15 purchase-outline p-5">
+      <h2 class="font-semibold text-lg">Proveedor de la compra</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        @for (option of [{value:'existing',label:'Seleccionar existente',detail:'Proveedor del catálogo',icon:'icon-[tabler--search]'}, {value:'new',label:'Crear proveedor',detail:'Preparar sus datos',icon:'icon-[tabler--user-plus]'}]; track option.value) {
+          <button type="button" class="btn h-auto min-h-16 justify-start whitespace-normal text-left p-4" [class.border-primary]="providerMode() === option.value" [class.selection-active]="providerMode() === option.value" [attr.aria-pressed]="providerMode() === option.value" [disabled]="locked()" (click)="providerMode.set(option.value === 'existing' ? 'existing' : 'new')">
+            <span [class]="option.icon + ' text-xl shrink-0'"></span><span class="flex-1"><strong class="block">{{ option.label }}</strong><span class="block text-xs font-normal text-base-content/60 mt-1">{{ option.detail }}</span></span>
+            @if (providerMode() === option.value) { <span class="icon-[tabler--check] text-primary"></span> }
+          </button>
+        }
+      </div>
+
+      @if (providerMode() === "existing") {
+        <div class="mt-4">
+          <app-combobox-form-control
+            [valuesResource]="providerOptions()"
+            [isError]="attempted() && !selectedProvider()"
+            [selectedValue]="selectedProvider()"
+            placeholderInput="Proveedor"
+            [loading]="providerLoading()"
+            [disable]="locked()"
+            (click)="searchProviders('')"
+            (searchTextChange)="searchProviders($event)"
+            (valuesOutput)="chooseProvider($event)"
+          />
+          @if (attempted() && !selectedProvider()) {
+            <p class="text-error text-xs mt-1" role="alert">* Obligatorio</p>
+          }
+        </div>
+      } @else {
+        <fieldset [disabled]="locked()">
+          <form
+            [formGroup]="providerForm"
+            class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4"
+            (input)="markChanged()"
+            (focusout)="touch('provider')"
+          >
+            <label class="fieldset sm:col-span-2"
+              ><span class="fieldset-legend">Nombre *</span
+              ><input
+                class="input w-full"
+                [class.input-error]="!!providerFieldError('name')"
+                [attr.aria-invalid]="!!providerFieldError('name')"
+                formControlName="name"
+                maxlength="200"
+              />
+              @if (providerFieldError("name"); as message) {
+                <span class="text-error text-xs" role="alert">{{
+                  message
+                }}</span>
+              }
+            </label>
+            <label class="fieldset"
+              ><span class="fieldset-legend">NRC (opcional)</span
+              ><input
+                class="input w-full"
+                [class.input-error]="!!providerFieldError('nrc')"
+                [attr.aria-invalid]="!!providerFieldError('nrc')"
+                formControlName="nrc"
+                maxlength="30"
+                inputmode="numeric"
+              />
+              @if (providerFieldError("nrc"); as message) {
+                <span class="text-error text-xs" role="alert">{{
+                  message
+                }}</span>
+              }
+            </label>
+            <label class="fieldset"
+              ><span class="fieldset-legend">NIT / documento (opcional)</span
+              ><input
+                class="input w-full"
+                [class.input-error]="!!providerFieldError('nit')"
+                [attr.aria-invalid]="!!providerFieldError('nit')"
+                formControlName="nit"
+                maxlength="30"
+                inputmode="numeric"
+              />
+              @if (providerFieldError("nit"); as message) {
+                <span class="text-error text-xs" role="alert">{{
+                  message
+                }}</span>
+              }
+            </label>
+            <label class="fieldset"
+              ><span class="fieldset-legend">Teléfono · opcional</span
+              ><input
+                class="input w-full"
+                [class.input-error]="!!providerFieldError('phone')"
+                [attr.aria-invalid]="!!providerFieldError('phone')"
+                formControlName="phone"
+                maxlength="30"
+              />
+              @if (providerFieldError("phone"); as message) {
+                <span class="text-error text-xs" role="alert">{{
+                  message
+                }}</span>
+              }
+            </label>
+            <label class="fieldset"
+              ><span class="fieldset-legend">Correo · opcional</span
+              ><input
+                class="input w-full"
+                [class.input-error]="!!providerFieldError('email')"
+                [attr.aria-invalid]="!!providerFieldError('email')"
+                formControlName="email"
+                type="email"
+                maxlength="254"
+              />
+              @if (providerFieldError("email"); as message) {
+                <span class="text-error text-xs" role="alert">{{
+                  message
+                }}</span>
+              }
+            </label>
+            <button
+              class="btn sm:col-span-2"
+              type="button"
+              (click)="matchProvider()"
+              [disabled]="locked() || providerForm.invalid || providerLoading()"
+            >
+              Buscar coincidencia por NRC/NIT
+            </button>
+          </form>
+        </fieldset>
+        @if (attempted() && providerForm.invalid) {
+          <p class="text-error text-sm mt-3" role="alert">
+            Complete nombre, NRC y NIT. Si ingresó correo, debe ser válido.
+          </p>
+        }
+      }
+      <p class="text-sm text-base-content/60 mt-3">
+        El proveedor nuevo se crea junto a la compra; no se asigna a los
+        productos nuevos.
+      </p>
+    </section>
+    <section class="card bg-base-100 border border-base-content/15 purchase-outline p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-semibold text-lg">Productos de la compra</h2>
+      </div>
+      @if (!rows().length) { <p class="text-sm text-base-content/60 mt-4">{{ mode() === 'MANUAL' ? 'Agregue un producto para comenzar.' : 'Interprete el JSON para preparar las líneas.' }}</p> }
+      @for (row of rows(); track row.key; let index = $index) {
+        <article class="border rounded-box p-4 mt-4 min-w-0 scroll-mt-24" [attr.data-purchase-row]="row.key" [class.border-error]="(attempted() && !rowValid(row)) || !!duplicateGroup(row)" [class.border-2]="!!duplicateGroup(row)" [class.border-base-300]="(!attempted() || rowValid(row)) && !duplicateGroup(row)" [class.purchase-outline]="(!attempted() || rowValid(row)) && !duplicateGroup(row)">
+          <header class="flex flex-wrap items-center justify-between gap-2"><div class="min-w-0 flex-1"><h3 class="font-semibold">Producto {{ index + 1 }}</h3><p class="text-sm text-base-content/60 break-words">{{ rowName(row) || row.description || 'Sin configurar' }}</p></div>@if (duplicateGroup(row); as group) { <span class="badge badge-error badge-outline">Duplicado · líneas {{ group.join(", ") }}</span> } @else { <span class="badge" [class.badge-success]="rowValid(row)" [class.badge-warning]="!rowValid(row)">{{ rowValid(row) ? 'Completo' : 'Por revisar' }}</span> }<button type="button" class="btn btn-ghost btn-sm shrink-0" [attr.aria-expanded]="!collapsedProducts().has(row.key)" [attr.aria-controls]="'purchase-product-' + row.key" (click)="toggleProduct(row.key)"><span [class]="collapsedProducts().has(row.key) ? 'icon-[tabler--chevron-down]' : 'icon-[tabler--chevron-up]'" aria-hidden="true"></span>{{ collapsedProducts().has(row.key) ? 'Expandir' : 'Contraer' }}</button></header>
+          <div [id]="'purchase-product-' + row.key" [hidden]="collapsedProducts().has(row.key)">
+          @if (mode() === 'DOCUMENT') {
+            <fieldset class="fieldset mt-3 min-w-0"><legend class="fieldset-legend">Descripción para buscar</legend>
+              <div class="join flex w-full"><input class="input join-item flex-1 w-0 min-w-0" [ngModel]="row.searchText ?? row.description" (ngModelChange)="row.searchText = $event" [disabled]="locked()" aria-label="Descripción para buscar producto" /><button type="button" class="btn join-item shrink-0" [disabled]="locked() || !row.type || matchLoading()" (click)="findMatches(row, row.searchText ?? row.description)"><span class="icon-[tabler--search]"></span>Buscar</button></div>
+            </fieldset>
+          }
+          <fieldset class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4" [disabled]="locked()">
+            <label class="fieldset"><span class="fieldset-legend">Tipo de producto *</span><select class="select w-full min-h-11" [ngModel]="row.type" (ngModelChange)="changeProductType(row, $event)"><option value="">Seleccionar</option><option value="TIRE">Llanta</option><option value="SUPPLY">Insumo</option></select>@if (rowFieldError(row, 'type'); as error) { <span class="text-error text-xs">{{ error }}</span> }</label>
+            @if (row.type === 'TIRE' || row.type === 'SUPPLY') {
+            <fieldset class="fieldset"><legend class="fieldset-legend">¿Es producto nuevo?</legend><div class="join w-full"><button type="button" class="btn join-item flex-1 min-h-11" [class.btn-primary]="row.choice === 'existing'" [attr.aria-pressed]="row.choice === 'existing'" (click)="setNewProduct(row,false)">No</button><button type="button" class="btn join-item flex-1 min-h-11" [class.btn-primary]="row.choice === 'new'" [attr.aria-pressed]="row.choice === 'new'" (click)="setNewProduct(row,true)">Sí</button></div></fieldset>
+            }
+          </fieldset>
+          @if (row.type === 'TIRE' || row.type === 'SUPPLY') {
+          @if (row.choice === 'existing') {
+            @if (mode() === 'MANUAL') {
+              <fieldset class="fieldset mt-4"><legend class="fieldset-legend">Producto del catálogo *</legend><app-combobox-form-control [valuesResource]="row.productOptions ?? []" [selectedValue]="row.selected" [isError]="!!rowFieldError(row,'product')" [loading]="row.productLoading ?? false" [disable]="locked() || !row.type" placeholderInput="Buscar producto existente" (click)="searchProducts(row,'')" (searchTextChange)="searchProducts(row,$event)" (valuesOutput)="chooseProduct(row,$event)" /></fieldset>
+            }
+            @if (row.productId) {
+              <div class="border border-base-300 purchase-outline rounded-box p-3 mt-4 flex flex-wrap items-center gap-3"><span class="icon-[tabler--check] text-success shrink-0"></span><div class="flex-1 min-w-0"><small class="text-base-content/60">Producto relacionado</small><p class="font-semibold break-words">{{ row.selected?.name }}</p></div><button type="button" class="btn btn-sm w-full sm:w-auto min-h-11" [disabled]="quickLoading()" (click)="showProduct(row)">@if (quickLoading()) { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--eye]"></span>Ver producto</button></div>
+            } @else if (mode() === 'DOCUMENT') {
+              <p class="text-sm text-base-content/60 mt-3">Seleccione un producto existente.</p><button type="button" class="btn btn-outline mt-2 w-full sm:w-auto" [disabled]="locked() || !row.type" (click)="findMatches(row,'')"><span class="icon-[tabler--search]"></span>Buscar manualmente en el catálogo</button>
+            }
+          }
+          @if (row.choice === 'new') {
+            <section class="border border-base-300 purchase-outline rounded-box p-3 mt-4"><h4 class="font-semibold text-sm">Marca</h4>
+            <div class="tabs tabs-box mt-4 flex">
+              <button
+                class="tab flex-1"
+                [class.tab-active]="row.brandMode !== 'new'"
+                (click)="switchBrandMode(row, 'existing')"
+                [disabled]="locked()"
+              >
+                Seleccionar marca</button
+              ><button
+                class="tab flex-1"
+                [class.tab-active]="row.brandMode === 'new'"
+                (click)="switchBrandMode(row, 'new')"
+                [disabled]="locked()"
+              >
+                Crear marca
+              </button>
+            </div>
+            @if (row.brandMode !== "new") {
+              <div class="mt-4">
+                <app-combobox-form-control
+                  [valuesResource]="row.brandOptions ?? []"
+                  [isError]="!!rowFieldError(row, 'brand')"
+                  [selectedValue]="row.brandSelected ?? null"
+                  placeholderInput="Buscar marca existente"
+                  [loading]="row.brandLoading ?? false"
+                  [disable]="locked()"
+                  (click)="searchBrands(row, '')"
+                  (searchTextChange)="searchBrands(row, $event)"
+                  (valuesOutput)="chooseBrand(row, $event)"
+                />
+                @if (!!rowFieldError(row, "brand")) {
+                  <p class="text-error text-xs mt-1" role="alert">
+                    * Obligatorio
+                  </p>
+                }
+              </div>
+            } @else {
+              <label class="fieldset mt-4"
+                ><span class="fieldset-legend">Nombre de la nueva marca *</span
+                ><input
+                  class="input w-full"
+                  [class.input-error]="!!rowFieldError(row, 'brand')"
+                  [attr.aria-invalid]="!!rowFieldError(row, 'brand')"
+                  [attr.list]="'purchase-brands-' + row.key"
+                  [(ngModel)]="row.brandName"
+                  (ngModelChange)="row.ready = false; markChanged()"
+                  [disabled]="locked()"
+                  maxlength="100"
+                />
+                <datalist [id]="'purchase-brands-' + row.key">
+                  @for (name of brandSuggestions(row); track name) { <option [value]="name"></option> }
+                </datalist>
+                @if (rowFieldError(row, "brand"); as message) {
+                  <span class="text-error text-xs" role="alert">{{
+                    message
+                  }}</span>
+                }
+              </label>
+              <p class="text-xs text-base-content/60 mt-2">
+                Se crea al guardar la compra. Si ya existe con otras mayúsculas
+                o minúsculas, se reutiliza.
+              </p>
+            }
+
+            </section>
+            @if (row.ready) { <div class="border-l-2 border-primary bg-primary/5 rounded-box p-3 mt-3"><small class="text-base-content/60">Producto preparado</small><p class="font-semibold break-words">{{ rowName(row) }}</p><button type="button" class="btn btn-sm mt-3" (click)="showProduct(row)"><span class="icon-[tabler--eye]"></span>Ver producto</button></div> }
+            <button type="button" class="btn mt-4 w-full sm:w-auto min-h-11" [disabled]="locked()" (click)="prepare(row)"><span [class]="row.prepared ? 'icon-[tabler--edit]' : 'icon-[tabler--plus]'"></span>{{ row.prepared ? 'Modificar producto' : 'Crear producto' }}</button>
+          }
+          <section class="bg-base-200/40 rounded-box p-4 mt-5"><h4 class="text-xs font-semibold uppercase text-base-content/60 mb-3">Detalle de compra</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            <label class="fieldset"><span class="fieldset-legend">Cantidad *</span><input class="input w-full min-h-11" type="number" min="1" step="1" inputmode="numeric" [(ngModel)]="row.quantity" (ngModelChange)="markChanged()" [disabled]="locked() || mode() === 'DOCUMENT'" [class.input-error]="!!rowFieldError(row,'quantity')" /><span class="text-error text-xs min-h-8 block" [class.invisible]="!rowFieldError(row,'quantity')">{{ rowFieldError(row,'quantity') || " " }}</span></label>
+            <label class="fieldset"><span class="fieldset-legend">Costo unitario *</span><input class="input w-full min-h-11" type="number" min="0.0001" step="0.0001" inputmode="decimal" [ngModel]="row.unitPrice" (ngModelChange)="row.unitPrice = '' + $event; markChanged()" [disabled]="locked() || mode() === 'DOCUMENT'" [class.input-error]="!!rowFieldError(row,'cost')" /><span class="text-error text-xs min-h-8 block" [class.invisible]="!rowFieldError(row,'cost')">{{ rowFieldError(row,'cost') || " " }}</span></label>
+            <div class="bg-primary/10 rounded-box p-4"><span class="text-xs text-base-content/60">Subtotal</span><p class="text-xl font-semibold">{{ rowSubtotal(row) | currency:'USD' }}</p></div>
+          </div></section>
+          <details class="group border border-base-300 purchase-outline rounded-box mt-4 p-3" [open]="!!row.warehouse"><summary class="cursor-pointer text-sm min-h-11 flex items-center gap-3 rounded-field focus-visible:outline-2 focus-visible:outline-primary"><span class="icon-[tabler--building-warehouse] text-xl shrink-0" aria-hidden="true"></span><span class="flex-1 min-w-0"><span class="block font-semibold">Destino opcional</span><span class="block text-xs text-base-content/60 mt-1">Seleccionar bodega y zona</span></span><span class="icon-[tabler--chevron-down] text-xl shrink-0 transition-transform group-open:rotate-180" aria-hidden="true"></span></summary><div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+            <fieldset class="fieldset"><legend class="fieldset-legend">Bodega</legend><app-combobox-form-control [valuesResource]="warehouseOptions()" [selectedValue]="row.warehouse ?? null" [disable]="locked()" placeholderInput="Bodega" (click)="searchWarehouses('')" (searchTextChange)="searchWarehouses($event)" (valuesOutput)="chooseRowWarehouse(row,$event)" /></fieldset>
+            <fieldset class="fieldset"><legend class="fieldset-legend">Zona</legend><app-combobox-form-control [valuesResource]="row.zoneOptions ?? []" [selectedValue]="row.zone ?? null" [loading]="row.zoneLoading ?? false" [disable]="locked() || !row.warehouse" placeholderInput="Zona" (click)="searchRowZones(row,'')" (searchTextChange)="searchRowZones(row,$event)" (valuesOutput)="chooseRowZone(row,$event)" /></fieldset>
+          </div><p class="text-xs text-base-content/60 mt-2">La bodega filtra las zonas. Solo se guarda la zona seleccionada.</p></details>
+          }
+          <footer class="flex flex-wrap justify-between items-center gap-3 mt-4">@if (mode() === 'DOCUMENT') { <small class="text-base-content/60">Cantidad y costo originales del JSON.</small> }@if (mode() === 'MANUAL') { <button type="button" class="btn btn-sm btn-ghost text-error min-h-11" [disabled]="locked()" (click)="removeRow(row.key)"><span class="icon-[tabler--trash]"></span>Quitar línea</button> }</footer>
+          @if (duplicateGroup(row); as group) {
+            @if (group[group.length - 1] === index + 1) {
+              <section #duplicateBanner role="alert" class="alert alert-error mt-4 scroll-mt-24 flex items-start gap-3">
+                <span class="icon-[tabler--alert-triangle] text-xl shrink-0" aria-hidden="true"></span>
+                <div class="min-w-0 flex-1"><h4 class="font-semibold">Producto duplicado · líneas {{ group.join(', ') }}</h4>
+                  <p class="text-sm mt-2 break-words"><strong>{{ rowName(row) || row.description }}</strong> está agregado varias veces con los mismos datos de producto, costo y destino.</p>
+                  <p class="text-sm mt-2">Las cantidades suman {{ duplicateQuantity(group) }} unidades. Se requiere unificar las líneas o modificar los datos para diferenciarlas.</p>
+                  <div class="flex flex-col sm:flex-row flex-wrap gap-2 mt-3">
+                    <button type="button" class="btn bg-base-100 text-error border-base-100" [disabled]="locked()" (click)="resolveDuplicateProducts()"><span class="icon-[tabler--arrows-join]"></span>Unificar cantidades</button>
+                    <button type="button" class="btn btn-outline border-current text-inherit" [disabled]="locked()" (click)="modifyDuplicate(row)"><span class="icon-[tabler--edit]"></span>Modificar producto {{ index + 1 }}</button>
+                  </div>
+                </div>
+              </section>
+            }
+          }
+          </div>
+        </article>
+      }
+      @if (mode() === 'MANUAL') { <button type="button" class="btn btn-success mt-4 w-full sm:w-auto" [disabled]="locked()" (click)="addRow()"><span class="icon-[tabler--plus]"></span>Agregar producto</button> }
+    </section>
+  </div>
+  <aside class="min-w-0 xl:sticky xl:top-20 flex flex-col gap-5">
+    <section class="card bg-base-100 border border-base-content/15 purchase-outline p-5">
+      <h2 class="font-semibold text-lg">Revisión y guardado</h2>
+      @if (readOnly()) {
+        <p class="text-sm text-base-content/60 mt-3">
+          Esta orden está
+          {{
+            editingOrder()?.status === "COMPLETED" ? "completada" : "rechazada"
+          }}
+          y no permite cambios.
+        </p>
+      }
+      <p class="text-sm text-base-content/60 mt-3">
+        {{ rows().length }} líneas de compra
+      </p>
+      <div class="flex justify-between gap-3 mt-5 text-xl font-semibold">
+        <span>Total de productos</span><span>{{ total() | currency }}</span>
+      </div>
+      <p class="text-sm text-base-content/60 mt-4">
+        El total corresponde a los costos ingresados, sin calcular impuestos ni
+        cargos adicionales.
+        {{
+          isEditing()
+            ? "Se actualizan las líneas de esta orden."
+            : "Proveedor, marcas, productos y orden se guardan juntos."
+        }}
+        El stock se incorpora al aprobar el ingreso.
+      </p>
+      @if (uncertain()) {
+        <p class="text-warning text-sm mt-3">
+          El resultado del último intento no pudo confirmarse. Se conserva el
+          mismo guardado para evitar duplicados.
+        </p>
+      }
+      <button
+        class="btn btn-primary w-full mt-5"
+        (click)="save()"
+        [disabled]="
+          busy() ||
+          interpreting() ||
+          readOnly() ||
+          (isEditing() && !hasEditChanges())
+        "
+      >
+        @if (busy()) {
+          <span class="loading loading-spinner loading-sm"></span>
+        }
+        {{
+          isEditing()
+            ? "Guardar cambios"
+            : uncertain()
+              ? "Reintentar guardado"
+              : "Guardar compra"
+        }}
+      </button>
+    </section>
+    <section class="card bg-base-100 border border-base-content/15 purchase-outline p-5">
+      <h2 class="font-semibold text-lg">Antes de guardar</h2>
+      <div class="flex flex-wrap gap-3 text-xs mt-3">
+        <span class="inline-flex gap-1 items-center"
+          ><span class="status bg-base-content/40"></span>Sin revisar</span
+        ><span class="inline-flex gap-1 items-center"
+          ><span class="status status-error"></span>Pendiente</span
+        ><span class="inline-flex gap-1 items-center"
+          ><span class="status status-success"></span>Completo</span
+        >
+      </div>
+      <ul class="flex flex-col gap-3 mt-5 text-sm">
+        @if (mode() === "DOCUMENT") {
+          <li class="flex gap-2">
+            <span
+              [class.text-success]="sourceReady()"
+              [class.text-error]="
+                (attempted() || touched().document) && !sourceReady()
+              "
+              >{{
+                sourceReady()
+                  ? "✓"
+                  : attempted() || touched().document
+                    ? "!"
+                    : "⊖"
+              }}</span
+            >Documento interpretado
+          </li>
+        }
+        <li class="flex gap-2">
+          <span
+            [class.text-success]="providerComplete()"
+            [class.text-error]="
+              (attempted() || touched().provider) && !providerComplete()
+            "
+            >{{
+              providerComplete()
+                ? "✓"
+                : attempted() || touched().provider
+                  ? "!"
+                  : "⊖"
+            }}</span
+          >Proveedor confirmado
+        </li>
+
+        <li class="flex gap-2">
+          <span
+            [class.text-success]="productsValid()"
+            [class.text-error]="
+              (attempted() || touched().products) && !productsValid()
+            "
+            >{{
+              productsValid()
+                ? "✓"
+                : attempted() || touched().products
+                  ? "!"
+                  : "⊖"
+            }}</span
+          >Productos, cantidades y costos revisados
+        </li>
+      </ul>
+      <h3 class="font-semibold mt-6 border-t border-base-content/15 purchase-outline pt-4">
+        Información opcional
+      </h3>
+      <ul class="flex flex-col gap-3 mt-3 text-sm text-base-content/60">
+        <li>{{ pdf() ? "✓" : "⊖" }} PDF de respaldo</li>
+        <li>{{ rowsHaveDestination() ? "✓" : "⊖" }} Destinos por producto</li>
+
+        <li>
+          {{ providerForm.controls.phone.value ? "✓" : "⊖" }} Teléfono del
+          proveedor
+        </li>
+        <li>
+          {{ providerForm.controls.email.value ? "✓" : "⊖" }} Correo del
+          proveedor
+        </li>
+      </ul>
+    </section>
+  </aside>
+</div>
+<app-tire-form-modal (draftSaved)="tirePrepared($event)" />
+<app-supply-form-modal (draftSaved)="supplyPrepared($event)" />
+<dialog #previewDialog class="modal" (close)="closePreview()">
+  <div class="modal-box max-w-4xl border border-base-content/20">
+    <div class="flex justify-between gap-3 mb-4">
+      <h2 class="font-semibold text-lg">Documento de compra</h2>
+      <button
+        class="btn btn-circle btn-sm btn-ghost"
+        (click)="closePreview()"
+        aria-label="Cerrar"
+      >
+        ✕
+      </button>
+    </div>
+    <pre class="text-xs whitespace-pre-wrap break-words max-h-[60vh] overflow-auto">{{ previewText() }}</pre>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button (click)="closePreview()">Cerrar</button>
+  </form>
+</dialog>
+<app-alert />
+
+<dialog #approvalChoice class="modal" (cancel)="$event.preventDefault(); approveLater()">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Compra guardada correctamente</h3>
+    <p class="py-4">¿Desea aprobar el ingreso ahora o dejarlo para después? El inventario se actualiza al aprobar.</p>
+    <div class="modal-action">
+      <button type="button" class="btn" [disabled]="loadingApproval()" (click)="approveLater()">Luego</button>
+      <button type="button" class="btn btn-success" [disabled]="loadingApproval()" (click)="approveNow()">
+        @if (loadingApproval()) { <span class="loading loading-spinner loading-sm"></span> }
+        Aprobar ahora
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button type="button" [disabled]="loadingApproval()" (click)="approveLater()">Cerrar</button></form>
+</dialog>
+<app-approve-modal [order]="orderToApprove()" (approved)="approvalCompleted()" (dismissed)="approvalClosed()" />
+
+<app-pdf-preview />
+
+<app-confirm-action-modal [title]="decisionTitle()" [message]="decisionMessage()" [confirmLabel]="decisionConfirmLabel()" [cancelLabel]="decisionCancelLabel()" (confirmed)="resolveDecision(true)" (cancelled)="resolveDecision(false)" />
+<dialog #matchDialog class="modal" (cancel)="$event.preventDefault(); closeMatches()"><section class="modal-box w-11/12 max-w-3xl border border-base-content/15"><header class="flex justify-between items-start gap-3"><div><h2 class="text-lg font-semibold">Buscar producto existente</h2><p class="text-xs text-base-content/60 mt-1">Se conservan cantidad, costo y zona de la compra.</p></div><button type="button" class="btn btn-sm btn-circle btn-ghost" aria-label="Cerrar búsqueda" (click)="closeMatches()">✕</button></header>
+  <fieldset class="fieldset mt-4"><legend class="fieldset-legend">Nombre o descripción</legend><div class="join flex w-full"><input class="input join-item flex-1 w-0 min-w-0" [ngModel]="matchTerm()" (ngModelChange)="matchTerm.set($event)" (keydown.enter)="searchMatchTerm(); $event.preventDefault()" /><button type="button" class="btn join-item" [disabled]="matchLoading()" (click)="searchMatchTerm()"><span class="icon-[tabler--search]"></span>Buscar</button></div></fieldset>
+  @if (matchLoading()) { <p role="status" class="mt-4"><span class="loading loading-spinner loading-sm"></span>Buscando productos…</p> } @else if (!matchResults().length) { <div class="bg-warning/10 border border-warning/30 rounded-box p-4 mt-4"><p>Sin coincidencias.</p><button type="button" class="btn btn-sm mt-3" (click)="matchTerm.set(''); searchMatchTerm()">Buscar manualmente en el catálogo</button></div> }
+  <div class="max-h-[50vh] overflow-auto">@for (product of matchResults(); track product.id) { <article class="border border-base-300 purchase-outline rounded-box p-4 mt-3 flex flex-col sm:flex-row gap-3 sm:items-center"><div class="flex-1 min-w-0"><p class="font-medium break-words">{{ product.name }}</p><p class="text-xs text-base-content/60 mt-1">{{product.brand?.name}} · Venta {{product.salePrice | currency:'USD'}}</p></div><button type="button" class="btn btn-primary w-full sm:w-auto" (click)="useMatch(product)">Usar producto</button></article> }</div>
+</section><form method="dialog" class="modal-backdrop"><button type="button" (click)="closeMatches()">Cerrar</button></form></dialog>
+<app-quick-view dialogId="purchase-product-quickview" [product]="quickProduct()" [draft]="quickDraft()" [purchaseContext]="quickPurchaseContext()" />

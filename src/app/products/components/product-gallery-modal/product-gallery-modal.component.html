@@ -1,0 +1,272 @@
+<!-- eslint-disable @angular-eslint/template/interactive-supports-focus -->
+<dialog
+  #galleryDialog
+  class="modal"
+  aria-label="Galería del producto"
+  (close)="galleryOpen.set(false)"
+>
+  <div
+    class="modal-box bg-base-100 border border-base-content/25 w-11/12 max-w-4xl max-h-[90vh] flex flex-col gap-3 overflow-hidden p-4 sm:p-6"
+  >
+    <div class="flex-none pr-8">
+      <h2 class="text-xl font-semibold">
+        {{ productQuery.data()?.name || "Imágenes del producto" }}
+      </h2>
+      <p class="text-sm text-base-content/60 mt-1">
+        {{ images().length }} imágenes · selecciona para gestionar
+      </p>
+    </div>
+    <form method="dialog" class="absolute right-2 top-2">
+      <button
+        class="btn btn-sm btn-circle btn-ghost"
+        aria-label="Cerrar galería"
+      >
+        ✕
+      </button>
+    </form>
+
+    <div class="flex flex-none flex-col sm:flex-row sm:items-center gap-3">
+      <div class="grid grid-cols-1 min-[400px]:grid-cols-2 sm:flex gap-2 w-full sm:w-auto min-w-0">
+        <button
+          class="btn btn-sm h-auto min-h-10 py-2 px-2 sm:px-3 text-xs sm:text-sm min-w-0"
+          [disabled]="busy() || images().length === 0"
+          (click)="toggleSelectAll()"
+        >
+          <span class="icon-[tabler--checkbox] shrink-0"></span
+          ><span class="whitespace-normal">{{
+            allSelected() ? "Deseleccionar todas" : "Seleccionar todas"
+          }}</span>
+        </button>
+        <button
+          class="btn btn-sm h-auto min-h-10 py-2 px-2 sm:px-3 text-xs sm:text-sm min-w-0"
+          [disabled]="busy() || selectedIds().length === 0"
+          (click)="deleteSelected()"
+        >
+          @if (deleteAction() === "selected") {
+            <span class="loading loading-spinner loading-xs shrink-0"></span>
+          } @else {
+            <span class="icon-[tabler--trash] shrink-0"></span>
+          }
+          <span class="whitespace-normal">Eliminar selección</span>
+        </button>
+      </div>
+      <div
+        class="flex gap-2 self-end sm:ml-auto shrink-0"
+        role="group"
+        aria-label="Vista de imágenes"
+      >
+        <button
+          class="btn btn-sm btn-square"
+          [class.btn-primary]="layout() === 'list'"
+          [attr.aria-pressed]="layout() === 'list'"
+          aria-label="Vista de lista"
+          title="Vista de lista"
+          (click)="setLayout('list')"
+        >
+          <span class="icon-[tabler--list] text-lg"></span>
+        </button>
+        <button
+          class="btn btn-sm btn-square"
+          [class.btn-primary]="layout() === 'grid'"
+          [attr.aria-pressed]="layout() === 'grid'"
+          aria-label="Vista de cuadrícula"
+          title="Vista de cuadrícula"
+          (click)="setLayout('grid')"
+        >
+          <span class="icon-[tabler--layout-grid] text-lg"></span>
+        </button>
+      </div>
+    </div>
+    <p class="flex-none text-xs text-base-content/60" aria-live="polite">
+      {{ selectedIds().length }} seleccionadas
+    </p>
+
+    <div class="gallery-images min-h-0 overflow-y-auto flex-1 max-h-[50vh]">
+      @if (productQuery.isLoading()) {
+        <div class="skeleton h-36 w-full" aria-label="Cargando imágenes"></div>
+      } @else if (productQuery.error()) {
+        <p class="text-base-content/60 py-6">
+          No se pudieron cargar las imágenes.
+        </p>
+      } @else if (images().length === 0) {
+        <p class="text-base-content/60 py-6">
+          Este producto aún no tiene imágenes.
+        </p>
+      } @else {
+        <div
+          [class.grid]="layout() === 'grid'"
+          [class.grid-cols-2]="layout() === 'grid'"
+          [class.sm:grid-cols-3]="layout() === 'grid'"
+          [class.gap-3]="layout() === 'grid'"
+          [class.divide-y]="layout() === 'list'"
+          class="divide-base-300"
+        >
+          @for (img of images(); track img.id; let i = $index) {
+            <div
+              class="gallery-image"
+              [class.rounded-lg]="layout() === 'grid'"
+              [class.border]="layout() === 'grid'"
+              [class.border-base-300]="layout() === 'grid'"
+              [class.overflow-hidden]="layout() === 'grid'"
+              [class.flex]="layout() === 'list'"
+              [class.flex-wrap]="layout() === 'list'"
+              [class.items-center]="layout() === 'list'"
+              [class.gap-3]="layout() === 'list'"
+              [class.py-3]="layout() === 'list'"
+            >
+              <button
+                type="button"
+                class="cursor-zoom-in bg-base-200 rounded-lg overflow-hidden shrink-0"
+                [class.w-full]="layout() === 'grid'"
+                [class.w-20]="layout() === 'list'"
+                aria-label="Abrir imagen del producto"
+                (click)="lightboxUrl.set(img.url)"
+              >
+                <img
+                  [src]="img.url"
+                  [alt]="'Imagen ' + (i + 1) + ' del producto'"
+                  class="w-full object-contain"
+                  [class.h-32]="layout() === 'grid'"
+                  [class.h-20]="layout() === 'list'"
+                  loading="lazy"
+                />
+              </button>
+              <label
+                class="flex items-center gap-2 cursor-pointer"
+                [class.p-3]="layout() === 'grid'"
+                [class.flex-1]="layout() === 'list'"
+              >
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm checkbox-primary"
+                  [disabled]="busy()"
+                  [checked]="selectedIds().includes(img.id)"
+                  (change)="toggleSelect(img.id)"
+                  [attr.aria-label]="'Seleccionar imagen ' + (i + 1)"
+                />
+                <span class="text-sm">Imagen {{ i + 1 }}</span>
+              </label>
+              <div
+                class="flex gap-1"
+                [class.px-2]="layout() === 'grid'"
+                [class.pb-2]="layout() === 'grid'"
+              >
+                <button
+                  class="btn btn-sm btn-ghost"
+                  title="Descargar imagen"
+                  aria-label="Descargar imagen"
+                  (click)="downloadImage(img.url)"
+                >
+                  <span class="icon-[tabler--download] text-lg"></span>
+                </button>
+                <button
+                  class="btn btn-sm btn-ghost"
+                  title="Abrir imagen"
+                  aria-label="Abrir imagen"
+                  (click)="lightboxUrl.set(img.url)"
+                >
+                  <span class="icon-[tabler--arrows-maximize] text-lg"></span>
+                </button>
+                <button
+                  class="btn btn-sm btn-ghost"
+                  title="Eliminar imagen"
+                  aria-label="Eliminar imagen"
+                  [disabled]="busy()"
+                  (click)="deleteOne(img.id)"
+                >
+                  @if (deleteAction() === img.id) {
+                    <span class="loading loading-spinner loading-xs"></span>
+                  } @else {
+                    <span class="icon-[tabler--trash] text-lg"></span>
+                  }
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div
+      class="flex-none border border-dashed border-base-content/35 bg-base-200/50 rounded-lg p-3 sm:p-4 text-center"
+      [class.border-primary]="isDragging()"
+      (dragover)="$event.preventDefault(); isDragging.set(true)"
+      (dragleave)="isDragging.set(false)"
+      (drop)="onDrop($event)"
+    >
+      <input
+        #fileInput
+        type="file"
+        accept="image/*"
+        multiple
+        class="hidden"
+        (change)="onFilesSelected($event)"
+      />
+      <button
+        class="btn btn-sm"
+        [disabled]="busy()"
+        (click)="fileInput.click()"
+      >
+        @if (isUploading()) {
+          <span class="loading loading-spinner loading-xs"></span>
+        } @else {
+          <span class="icon-[tabler--plus] text-lg"></span>
+        }
+        {{ isUploading() ? "Subiendo imágenes" : "Agregar archivos" }}
+      </button>
+      <p class="hidden sm:block text-xs text-base-content/60 mt-2">
+        Arrastra imágenes aquí o selecciona archivos desde tu equipo.
+      </p>
+    </div>
+    <div class="flex-none border-t border-base-300 pt-3 flex justify-end">
+      <form method="dialog"><button class="btn btn-sm">Cerrar</button></form>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button aria-label="Cerrar al tocar fuera">Cerrar</button>
+  </form>
+</dialog>
+
+<dialog
+  #lightbox
+  class="modal"
+  aria-label="Imagen ampliada del producto"
+  (close)="lightboxUrl.set(null)"
+  (click)="closeLightboxOutside($event)"
+  (keydown.escape)="lightboxUrl.set(null)"
+>
+  @if (lightboxUrl(); as url) {
+    <div
+      class="modal-box bg-base-100 border border-base-content/25 w-11/12 max-w-4xl p-3 sm:p-4"
+      (click)="closeLightboxOutside($event)"
+  (keydown.escape)="lightboxUrl.set(null)"
+    >
+      <div class="flex justify-end gap-2 mb-3">
+        <button class="btn btn-sm" (click)="downloadImage(url)">
+          <span class="icon-[tabler--download] text-lg"></span>Descargar
+        </button>
+        <button
+          class="btn btn-sm btn-circle btn-ghost"
+          aria-label="Cerrar imagen"
+          (click)="lightboxUrl.set(null)"
+        >
+          ✕
+        </button>
+      </div>
+      <img
+        [src]="url"
+        alt="Imagen del producto en detalle"
+        class="w-full max-h-[70vh] object-contain rounded-lg bg-base-200"
+      />
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button
+        aria-label="Cerrar imagen al tocar fuera"
+        (click)="lightboxUrl.set(null)"
+      >
+        Cerrar
+      </button>
+    </form>
+  }
+</dialog>

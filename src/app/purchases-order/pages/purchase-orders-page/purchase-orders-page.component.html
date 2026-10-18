@@ -1,0 +1,176 @@
+<app-title [titleDetail]="titleData()"><button
+    class="btn btn-success w-full sm:w-auto"
+    [routerLink]="['/purchase-orders/detail','0']">
+    <span class="icon-[tabler--plus] text-2xl"></span>
+    Crear nuevo registro
+  </button></app-title>
+
+<!-- Card: filtros -->
+<app-filter-panel [hasAdditional]="true" [expanded]="isOpen()" (expandedChange)="isOpen.set($event)" heading="Consultar registros">
+<div filterSearch><div class="filter-label"><span>Número de orden</span><label class="input w-full">
+    <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <g
+        stroke-linejoin="round"
+        stroke-linecap="round"
+        stroke-width="2.5"
+        fill="none"
+        stroke="currentColor">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.3-4.3"></path>
+      </g>
+    </svg>
+    <input #txtDocumentNumber type="text" placeholder="Buscar por número de orden"
+      (input)="setDocumentNumber(txtDocumentNumber.value)" [value]="this.formSearchParams().documentNumber ?? ''" />
+    @if ((this.formSearchParams().documentNumber ?? '') !== '') {
+      <button
+        type="button"
+        class="btn btn-xs btn-circle btn-ghost shrink-0"
+        (click)="clearDocumentNumber()"
+        aria-label="Limpiar">✕</button>
+    }
+  </label></div></div>
+<div filterFields><fieldset class="filter-group "><legend>Compra</legend><div class="filter-pair"><div class="filter-label"><span>Proveedor</span><app-combobox
+    (click)="providerTouched.set(true)"
+    (valuesOutput)="setProvider($event)"
+    (searchTextChange)="providerComboboxOutput.set($event); providerTouched.set(true)"
+    [valuesResource]="providersQuery.data() ?? []"
+    [placeholderInput]="placeholderInput().provider"
+    [selectedValue]="selectedProvider()"
+    [loading]="providersQuery.isLoading()"></app-combobox></div><div class="filter-label"><span>Estado</span><select
+    class="select w-full"
+    name="status"
+    id="status"
+    [value]="this.formSearchParams().status ?? ''"
+    (change)="setPurchaseOrderStatus($event)">
+    <option value>Estado sin seleccionar</option>
+    @for(purchaseOrder of purchaseOrderStatus; track $index){
+    <option [selected]="this.formSearchParams().status === purchaseOrder.status"
+      [value]="purchaseOrder.status">{{purchaseOrder.title}}</option>
+    }
+  </select></div></div></fieldset><fieldset class="filter-group filter-group--wide"><legend>Periodo</legend><div class="min-w-0"><app-date-range class="lg:col-span-3"
+    (toChange)="setTo($event)"
+    (fromChange)="setFrom($event)"
+    [toSelected]="formSearchParams().to"
+    [fromSelected]="formSearchParams().from">
+  </app-date-range></div></fieldset></div>
+<div filterActions><button type="button" class="btn btn-primary" (click)="onSearch()" [disabled]="purchaseOrderQuery.isFetching()"><span class="icon-[tabler--search] text-lg" aria-hidden="true"></span>Buscar</button><button type="button" class="btn btn-warning" (click)="onResetFilters()" [disabled]="purchaseOrderQuery.isFetching()"><span class="icon-[tabler--x] text-lg" aria-hidden="true"></span>Limpiar</button></div>
+</app-filter-panel>
+<!-- /Card: filtros -->
+
+<!-- Card: listado de compras -->
+<div class="bg-base-100 rounded-box border border-base-300 p-4 md:p-6 mb-5">
+<div class="flex flex-col gap-4 p-1">
+
+  
+
+  @if(purchaseOrderQuery.isPending()){
+  <app-skeleton [limit]="limitPerPage()"></app-skeleton>
+  }
+
+  @if(purchaseOrderQuery.error()){
+  <app-error-banner
+    [errorBanner]="{message: 'Ocurrió un error inesperado', error: purchaseOrderQuery.error()?.name ?? 'Verifique los logs del servidor'}"></app-error-banner>
+  }
+
+  <app-pagination [currentPage]="purchaseOrderQuery.data()?.meta?.page ?? 0"
+    [totalPages]="purchaseOrderQuery.data()?.meta?.totalPages!"
+    [totalItems]="purchaseOrderQuery.data()?.meta?.total ?? 0"
+    [pageSize]="purchaseOrderQuery.data()?.meta?.limit ?? 0"><app-limit paginationLimit class="w-full sm:w-48"
+    [limitInput]="limitPerPage()"
+    (outputLimit)="onNewLimit($event)" /></app-pagination>
+
+  @if(purchaseOrderQuery.data(); as data){
+  <div class="flex flex-wrap items-center gap-3 mb-3">
+    <button type="button" class="btn btn-sm" [disabled]="!documentSelection().length" (click)="documentsModal()?.openZip(documentSelection())"><span class="icon-[tabler--file-zip]"></span>Descargar documentos seleccionados ({{ documentSelection().length }})</button>
+    @if (documentSelection().length) { <button type="button" class="btn btn-sm btn-ghost" (click)="documentSelection.set([])">Limpiar selección</button> }
+  </div>
+  <app-purchase-order-table [checkedIds]="documentSelection()" (checkedChange)="toggleDocumentSelection($event)"
+    [purchaseOrder]="purchaseOrderQuery.data()?.data"
+    [rowOffset]="((purchaseOrderQuery.data()?.meta?.page ?? 1) - 1) * (purchaseOrderQuery.data()?.meta?.limit ?? 0)"></app-purchase-order-table>
+  }
+
+  <app-pagination [currentPage]="purchaseOrderQuery.data()?.meta?.page ?? 0"
+    [totalPages]="purchaseOrderQuery.data()?.meta?.totalPages!"
+    [totalItems]="purchaseOrderQuery.data()?.meta?.total ?? 0"
+    [pageSize]="purchaseOrderQuery.data()?.meta?.limit ?? 0"></app-pagination>
+
+</div>
+</div>
+<!-- /Card: listado de compras -->
+
+@if(idSelected() > 0){
+
+  <!-- Floating Action Bar Contextual -->
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn">
+    <!-- Info del registro seleccionado -->
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedRowNumber() }}</span>
+    </div>
+
+    <!-- Botón Vista Previa -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="openPreview()"
+      [disabled]="loadingPreview()"
+      title="Vista Previa"
+      aria-label="Vista Previa">
+      @if (loadingPreview()) {
+        <span class="loading loading-spinner loading-xs"></span>
+      } @else {
+        <span class="icon-[tabler--eye] text-xl sm:text-lg text-primary"></span>
+      }
+      <span class="hidden sm:inline text-xs sm:text-sm">Ver</span>
+    </button>
+
+    @if(purchaseOrderState() === purchaseOrderStatusEnum.PENDING){
+      <!-- Botón Editar: navega a la página de detalle, NO abre modal -->
+      <a
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+        [routerLink]="['/purchase-orders/detail', idSelected()]"
+        title="Modificar"
+        aria-label="Modificar">
+        <span class="icon-[tabler--edit] text-xl sm:text-lg text-info"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+      </a>
+
+      <!-- Botón Aprobar: abre el modal de zonas, no el genérico -->
+      <button
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5 text-success"
+        (click)="onApproveSelected()"
+        title="Aprobar"
+        aria-label="Aprobar">
+        <span class="icon-[proicons--checkmark-circle] text-xl sm:text-lg"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Aprobar</span>
+      </button>
+
+      <!-- Botón Rechazar -->
+      <button
+        class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+        onclick="actionModal.showModal()"
+        (click)="openActionModal('Rechazar')"
+        title="Rechazar"
+        aria-label="Rechazar">
+        <span class="icon-[fluent--dismiss-circle-12-regular] text-xl sm:text-lg text-error"></span>
+        <span class="hidden sm:inline text-xs sm:text-sm">Rechazar</span>
+      </button>
+    }
+
+    <button type="button" class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3" (click)="documentsModal()?.open(idSelected())" aria-label="Documentos de compra" title="Documentos"><span class="icon-[tabler--files] text-xl sm:text-lg"></span><span class="hidden sm:inline">Documentos</span></button>
+    <!-- Botón Deseleccionar / Cerrar -->
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="deselectPurchaseOrder()"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+
+  <app-quick-view [order]="previewOrder()"></app-quick-view>
+  <app-action-modal [titleAction]="modalTitleAction()"></app-action-modal>
+  <app-approve-modal [order]="orderToApprove()" (approved)="onApproved()"></app-approve-modal>
+}
+
+<app-alert />
+
+<app-purchase-documents-modal />

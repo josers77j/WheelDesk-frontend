@@ -1,0 +1,63 @@
+<div class="overflow-x-auto">
+  <table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 min-w-max">
+    <!-- head -->
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nombre</th>
+        <th>Correo</th>
+        <th>Rol</th>
+        <th>Sesiones</th>
+        <th>Fecha de creación</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows  -->
+      @for (user of users; track user.id) {
+        <tr
+          (click)="changeRowSelectedStatus(user.id)"
+          [class.bg-gray-800]="user.id === this.userService.userIdSelected()"
+          [class.text-white]="user.id === this.userService.userIdSelected()"
+          class="transition-all ease-in delay-50 cursor-pointer"
+        >
+          <th id>{{ rowOffset + $index + 1 }}</th>
+
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span
+              class="badge badge-sm"
+              [class.badge-primary]="user.role === 'ADMIN'"
+              [class.badge-info]="user.role === 'SELLER'"
+              [class.badge-ghost]="user.role === 'VIEWER'"
+            >
+              {{ user.role | RoleLabel }}
+            </span>
+          </td>
+          <td class="text-left">
+            @if (user.refreshToken.length) {
+              <span class="badge badge-sm badge-primary">{{
+                user.refreshToken.length
+              }}</span>
+            } @else {
+              <span class="opacity-40">0</span>
+            }
+          </td>
+          <td>{{ user.createdAt | date }}</td>
+        </tr>
+      }
+      <!-- empty -->
+      @empty {
+        @if (isLoading) {
+          <tr>
+            <td colspan="99"><app-skeleton [limit]="skeletonLimit"></app-skeleton></td>
+          </tr>
+        } @else {
+          <tr>
+            <th>No hay registros</th>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

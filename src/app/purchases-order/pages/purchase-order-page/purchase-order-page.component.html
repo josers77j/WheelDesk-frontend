@@ -1,0 +1,13 @@
+@if (+purchaseOrderId() === 0) {
+  <app-assisted-purchase />
+} @else if (purchaseOrderResource.isLoading()) {
+  <app-form-skeleton />
+} @else {
+  @if (purchaseOrderResource.value(); as order) {
+    <app-assisted-purchase [purchaseOrder]="order" />
+  } @else if (purchaseOrderResource.error()) {
+    <div class="alert alert-error" role="alert">
+      No se pudo cargar la orden de compra.
+    </div>
+  }
+}

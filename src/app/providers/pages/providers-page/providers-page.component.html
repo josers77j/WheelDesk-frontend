@@ -1,0 +1,103 @@
+<app-title [titleDetail]="titleData()">
+  @if (authService.isAdmin()) {
+    <button type="button" class="btn btn-success w-full sm:w-auto" (click)="openCreateModal()">
+      <span class="icon-[tabler--plus] text-2xl" aria-hidden="true"></span>
+      Crear proveedor
+    </button>
+  }
+</app-title>
+
+<!-- Card: filtros -->
+<app-filter-panel heading="Consultar registros">
+<div filterSearch><div class="filter-label"><span>Buscar por nombre</span><app-search #listSearch [showButton]="false" [busy]="ProvidersQuery.isFetching()" (outputParam)="onSearch($event)" [initialValue]="query()"></app-search></div></div>
+<div filterActions><button type="button" class="btn btn-primary" (click)="listSearch.emitNow()" [disabled]="ProvidersQuery.isFetching()"><span class="icon-[tabler--search] text-lg" aria-hidden="true"></span>Buscar</button><button type="button" class="btn btn-warning" (click)="listSearch.resetInput(); onResetFilters()" [disabled]="ProvidersQuery.isFetching()"><span class="icon-[tabler--x] text-lg" aria-hidden="true"></span>Limpiar</button></div>
+</app-filter-panel>
+<!-- /Card: filtros -->
+
+<!-- Card: listado -->
+<div class="bg-base-100 rounded-box border border-base-300 p-4 md:p-6 mb-5">
+<div class="flex flex-col gap-4 p-1">
+
+  
+
+  <app-pagination [currentPage]="ProvidersQuery.data()?.meta?.page ?? 0"
+    [totalPages]="ProvidersQuery.data()?.meta?.totalPages!"
+    [totalItems]="ProvidersQuery.data()?.meta?.total ?? 0"
+    [pageSize]="ProvidersQuery.data()?.meta?.limit ?? 0"><app-limit paginationLimit class="w-full sm:w-48" [limitInput]="limitPerPage()" (outputLimit)="onNewLimit($event)" /></app-pagination>
+
+  @if(ProvidersQuery.error()){
+  <app-error-banner
+    [errorBanner]="{message: 'Ocurrió un error inesperado', error: ProvidersQuery.error()?.name ?? 'Verifique los logs del servidor'}"></app-error-banner>
+  }
+
+  <app-provider-table
+    [providers]="ProvidersQuery.data()?.data ?? []"
+    [isLoading]="ProvidersQuery.isLoading()"
+    [skeletonLimit]="limitPerPage()"
+    [rowOffset]="((ProvidersQuery.data()?.meta?.page ?? 1) - 1) * (ProvidersQuery.data()?.meta?.limit ?? 0)"></app-provider-table>
+
+  <app-pagination [currentPage]="ProvidersQuery.data()?.meta?.page ?? 0"
+    [totalPages]="ProvidersQuery.data()?.meta?.totalPages!"
+    [totalItems]="ProvidersQuery.data()?.meta?.total ?? 0"
+    [pageSize]="ProvidersQuery.data()?.meta?.limit ?? 0"></app-pagination>
+
+</div>
+
+</div>
+<!-- /Card: listado -->
+
+@if(idSelected() > 0){
+  <!-- Floating Action Bar Contextual -->
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn">
+    <!-- Info del registro seleccionado -->
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedRowNumber() }}</span>
+    </div>
+
+    <!-- Botón Vista Previa -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="my_modal_3.showModal()"
+      title="Vista Previa"
+      aria-label="Vista Previa">
+      <span class="icon-[tabler--eye] text-xl sm:text-lg text-primary"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Ver</span>
+    </button>
+
+    <!-- Botón Modificar: abre el modal de edición -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="openEditModal()"
+      title="Modificar"
+      aria-label="Modificar">
+      <span class="icon-[tabler--edit] text-xl sm:text-lg text-info"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+    </button>
+
+    <!-- Botón Eliminar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      onclick="my_modal_1.showModal()"
+      title="Eliminar"
+      aria-label="Eliminar">
+      <span class="icon-[tabler--trash] text-xl sm:text-lg text-error"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Remover</span>
+    </button>
+
+    <!-- Botón Deseleccionar / Cerrar -->
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="deselectProvider()"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+
+  <app-quick-view [provider]="providerPreviewData()"></app-quick-view>
+}
+
+<app-delete-action-modal />
+<app-provider-form-modal #providerFormModal (saved)="onProviderSaved()" />
+
+<app-alert />

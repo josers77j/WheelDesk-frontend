@@ -1,0 +1,60 @@
+<div class="overflow-x-auto">
+  <table class="table table-zebra w-full cursor-pointer [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Documento</th>
+        <th>Cliente</th>
+        <th>Tipo de documento</th>
+        <th>Total</th>
+        <th>Fecha de venta</th>
+        <th>Estado</th>
+        <th>Archivos originales</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (saleOrder of saleOrders(); track saleOrder.id) {
+        <tr
+          (click)="changeRowSelectedStatus(saleOrder.id)"
+          [class.bg-gray-800]="saleOrder.id === this.saleOrderService.selectedSaleOrderId()"
+          [class.text-white]="saleOrder.id === this.saleOrderService.selectedSaleOrderId()"
+
+          class="transition-all ease-in delay-50 cursor-pointer"
+        >
+          <td class="font-medium">{{ rowOffset() + $index + 1 }}</td>
+          <td>{{ saleOrder.documentNumber }}</td>
+          <td>{{ saleOrder.customer?.name ?? saleOrder.customerName ?? '—' }}</td>
+          <td>{{ saleOrder.documentTypeCode | DteType }}</td>
+          <td>{{ saleOrder.total | currency }}</td>
+          <td>{{ saleOrder.createdAt | date: 'longDate' : 'America/El_Salvador' }}</td>
+          <td>
+            <span
+              class="badge"
+              [class.badge-success]="saleOrder.status === saleOrderStatus.COMPLETED"
+              [class.badge-error]="saleOrder.status === saleOrderStatus.REJECTED"
+              [class.badge-warning]="saleOrder.status === saleOrderStatus.PENDING"
+              [class.badge-neutral]="saleOrder.status === saleOrderStatus.ANNULLED"
+              [class.badge-info]="saleOrder.status === saleOrderStatus.CONTINGENCY"
+            >
+              {{ saleOrder.status | SaleOrderStatus }}
+            </span>
+          </td>
+          <td>
+            <span class="opacity-70">{{ saleOrder.document?.pdfKey && saleOrder.document?.jsonKey ? 'PDF + JSON' : 'Sin adjuntos' }}</span>
+          </td>
+        </tr>
+      }
+      @empty {
+        @if (isLoading()) {
+          <tr>
+            <td colspan="99"><app-skeleton [limit]="skeletonLimit()"></app-skeleton></td>
+          </tr>
+        } @else {
+          <tr>
+            <th>No hay registros</th>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

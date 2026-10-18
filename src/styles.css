@@ -1,0 +1,196 @@
+/* You can add global styles to this file, and also import other style files */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes:
+    corporate --default,
+    sunset --prefersdark;
+}
+@plugin "@iconify/tailwind4";
+
+@layer components {
+  .modal-box {
+    @apply border;
+  }
+}
+
+@plugin "daisyui/theme" {
+  name: "corporate";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(95% 0.01 258.338);
+  --color-base-300: oklch(98% 0.004 286.32);
+  --color-base-content: oklch(13% 0.028 261.692);
+  --color-primary: oklch(58% 0.158 241.966);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(55% 0.046 257.417);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent: oklch(60% 0.118 184.704);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(13% 0.028 261.692);
+  --color-neutral-content: oklch(100% 0 0);
+  --color-info: oklch(60% 0.126 221.723);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(62% 0.194 149.214);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(85% 0.199 91.936);
+  --color-warning-content: oklch(0% 0 0);
+  --color-error: #b92e45;
+  --color-error-content: oklch(98% 0.003 247.858);
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.28125rem;
+  --border: 0.5px;
+  --depth: 1;
+  --noise: 0;
+}
+
+
+@plugin "daisyui/theme" {
+  name: "sunset";
+  default: false;
+  prefersdark: false;
+  color-scheme: "dark";
+  --color-base-100: oklch(15% 0 0);
+  --color-base-200: oklch(20% 0 0);
+  --color-base-300: oklch(25% 0 0);
+  --color-base-content: oklch(83.7% 0.005 262.900);
+  --color-primary: oklch(70% 0.165 254.624);
+  --color-primary-content: oklch(14.94% 0.031 39.947);
+  --color-secondary: oklch(72.537% 0.177 2.72);
+  --color-secondary-content: oklch(14.507% 0.035 2.72);
+  --color-accent: oklch(71.294% 0.166 299.844);
+  --color-accent-content: oklch(14.258% 0.033 299.844);
+  --color-neutral: oklch(14% 0 0);
+  --color-neutral-content: oklch(70% 0.019 237.69);
+  --color-info: oklch(85.559% 0.085 206.015);
+  --color-info-content: oklch(17.111% 0.017 206.015);
+  --color-success: oklch(85.56% 0.085 144.778);
+  --color-success-content: oklch(17.112% 0.017 144.778);
+  --color-warning: oklch(85.569% 0.084 74.427);
+  --color-warning-content: oklch(17.113% 0.016 74.427);
+  --color-error: oklch(79.7% 0.200 21.647);
+  --color-error-content: oklch(0% 0.001 106.424);
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.28125rem;
+  --size-field: 0.28125rem;
+  --border: 1.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+
+@theme {
+  --animate-fadeIn: fadeIn 0.5s ease-in-out;
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  --animate-fadeOut: fadeOut 0.3s ease-in-out forwards;
+  @keyframes fadeOut {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+/* DaisyUI v5 vive en cascade layers por encima de preflight: su
+   `.menu{display:flex}` pisa el `[hidden]` nativo y los paneles nunca se
+   ocultan. Sin layers esto siempre gana. */
+[hidden] {
+  display: none !important;
+}
+
+/* Móvil: el doble-tap rápido es gesto de zoom por defecto y se come el
+   segundo clic en toggles (comboboxes, colapsables). Con manipulation el
+   navegador entrega los clics al instante sin zoomear. */
+button {
+  touch-action: manipulation;
+}
+
+/* Activo del sidebar: color distinto en cada tema */
+[data-theme="corporate"] .menu li > button.bg-base-200 {
+  color: oklch(13% 0.028 261.692);
+}
+[data-theme="sunset"] .menu li > button.bg-base-200 {
+  background-color: var(--color-base-300);
+  color: oklch(97% 0 0);
+}
+
+/* Selección de filas: DaisyUI pinta el zebra directamente sobre las celdas */
+[data-theme="corporate"]
+  .table.table-zebra
+  tbody
+  tr.bg-base-300
+  > :where(th, td) {
+  background-color: oklch(100% 0 0);
+  color: var(--color-base-content);
+}
+
+[data-theme="sunset"] .table.table-zebra tbody tr.bg-base-300 > :where(th, td) {
+  background-color: oklch(25.2% 0.11 237.69);
+  color: var(--color-base-content);
+}
+
+/* Keep Safari's native Caps Lock hint compact inside styled password fields. */
+input.input[type="password"]::-webkit-caps-lock-indicator {
+  width: 17px;
+  height: 17px;
+  max-width: 17px;
+  max-height: 17px;
+  align-self: center;
+  flex: none;
+}
+
+/* Keep neutral outlines consistent with assisted purchases in the light theme. */
+[data-theme="corporate"]
+  :is(
+    .modal-box,
+    .border-base-300,
+    .border-base-content\/5,
+    .border-base-content\/10,
+    .border-base-content\/15,
+    .border-base-content\/20,
+    .purchase-outline
+  ):not([class*="border-error"]):not([class*="border-warning"]):not(
+    [class*="border-success"]
+  ):not([class*="border-info"]):not([class*="border-primary"]):not(
+    [class*="border-secondary"]
+  ):not([class*="border-accent"]) {
+  border-color: color-mix(
+    in srgb,
+    var(--color-base-content) 22%,
+    var(--color-base-100)
+  );
+}
+
+/* Match the purchase cards in the dark theme as well. */
+[data-theme="sunset"]
+  :is(
+    .modal-box,
+    .border-base-300,
+    .border-base-content\/5,
+    .border-base-content\/10,
+    .border-base-content\/15,
+    .border-base-content\/20,
+    .purchase-outline
+  ):not([class*="border-error"]):not([class*="border-warning"]):not(
+    [class*="border-success"]
+  ):not([class*="border-info"]):not([class*="border-primary"]):not(
+    [class*="border-secondary"]
+  ):not([class*="border-accent"]) {
+  border-color: color-mix(in oklab, var(--color-base-content) 15%, transparent);
+}

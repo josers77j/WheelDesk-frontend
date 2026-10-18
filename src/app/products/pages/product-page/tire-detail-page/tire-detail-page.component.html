@@ -1,0 +1,299 @@
+<button type="button" class="btn btn-ghost mb-2" (click)="backToPreviousPage()"><span class="icon-[topcoat--back-light]"></span>
+  Regresar</button>
+<div class="bg-base-100 rounded-box shadow-lg p-4 px-4 md:p-8 mb-6">
+  <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 lg:grid-cols-3">
+    <div>
+      <p class="font-bold text-6xl">Llantas</p>
+      <p class="text-xl font-thin">Se recomienda llenar todos los campos.</p>
+    </div>
+
+    <div class="lg:col-span-2">
+
+      <form [formGroup]="tireForm" (ngSubmit)="onSubmit()"
+        class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+
+        <!-- Brand combobox -->
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Marca del producto</legend>
+            <app-combobox-form-control
+              (click)="brandTouched.set(true)"
+              (valuesOutput)="setBrand($event)"
+              (searchTextChange)="brandComboboxOutput.set($event); brandTouched.set(true)"
+              [placeholderInput]="placeholderInput().brand"
+              [valuesResource]="brandsQuery.data() ?? []"
+              [loading]="brandsQuery.isLoading()"
+              [isError]="!!tireForm.get('brandId')?.errors"
+              [selectedValue]="selectedBrand()"></app-combobox-form-control>
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="tireForm.get('brandId')!"></app-form-error-label>
+        </div>
+
+        <!-- Provider combobox -->
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Proveedor del producto</legend>
+            <app-combobox-form-control
+              (click)="providerTouched.set(true)"
+              (valuesOutput)="setProvider($event)"
+              (searchTextChange)="providerComboboxOutput.set($event); providerTouched.set(true)"
+              [placeholderInput]="placeholderInput().provider"
+              [valuesResource]="providersQuery.data() ?? []"
+              [loading]="providersQuery.isLoading()"
+              [selectedValue]="selectedProvider()"></app-combobox-form-control>
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Precio de compra</legend>
+            <input
+              type="number"
+              class="input w-full"
+              placeholder="Asignar precio de compra"
+              formControlName="purchasePrice"
+              [class.border-error]="tireForm.get('purchasePrice')?.errors" />
+            <p class="label">Opcional</p>
+          </fieldset>
+          <app-form-error-label [control]="tireForm.get('purchasePrice')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Precio de venta</legend>
+            <input
+              type="number"
+              class="input w-full"
+              placeholder="Asignar precio de venta"
+              formControlName="salePrice"
+              [class.border-error]="tireForm.get('salePrice')?.errors" />
+            <p class="label">Opcional</p>
+          </fieldset>
+          <app-form-error-label [control]="tireForm.get('salePrice')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Notas del producto</legend>
+            <textarea
+              class="textarea h-24 w-full"
+              placeholder="Redactar una descripción de esta marca"
+              formControlName="notes"></textarea>
+            <div class="label">Opcional</div>
+          </fieldset>
+        </div>
+
+        <h1 class="text-4xl font-bold md:col-span-6">Detalles</h1>
+
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Tipos de vehículo</legend>
+            <div class="flex flex-wrap gap-2">
+              @if (vehicleTypesQuery.data()?.length) {
+                @for (vt of vehicleTypesQuery.data()!; track vt.id) {
+                  <label class="badge gap-1.5 cursor-pointer"
+                    [class.badge-primary]="tireForm.get('vehicleTypeIds')?.value?.includes(vt.id)">
+                    <input
+                      type="checkbox"
+                      [checked]="tireForm.get('vehicleTypeIds')?.value?.includes(vt.id)"
+                      (change)="toggleVehicleType(vt.id)"
+                      class="hidden peer" />
+                    <span>{{ vt.name }}</span>
+                    <span class="icon-[tabler--check] peer-checked:inline hidden"></span>
+                  </label>
+                }
+              } @else {
+                @for (id of tireForm.get('vehicleTypeIds')?.value ?? []; track id) {
+                  <label class="badge badge-primary gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked disabled class="hidden peer" />
+                    <span>ID: {{ id }}</span>
+                    <span class="icon-[tabler--check] inline hidden"></span>
+                  </label>
+                }
+                @if (!(tireForm.get('vehicleTypeIds')?.value?.length)) {
+                  <div class="text-xs opacity-60">Cargando tipos...</div>
+                }
+              }
+            </div>
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="tireForm.get('vehicleTypeIds')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Estado de la llanta</legend>
+            <div>
+              @for(tireCondition of tireConditionList(); track tireCondition.title){
+              <input class="btn btn-dash mt-2 mx-1" type="radio" name="tireCondition"
+                [attr.aria-label]="tireCondition.title" [value]="tireCondition.value" formControlName="tireCondition" />
+              }
+            </div>
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="tireForm.get('tireCondition')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Ancho de la llanta</legend>
+            <input
+              type="number"
+              class="input w-full"
+              inputmode="number"
+              placeholder="Anchura (mm)"
+              formControlName="width"
+              [class.border-error]="tireForm.get('width')?.errors"
+              (input)="restrictMeasureDigits(tireForm.get('width'), $event)" />
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="tireForm.get('width')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Perfil</legend>
+            <input
+              type="number"
+              class="input w-full"
+              inputmode="number"
+              placeholder="Perfil"
+              formControlName="aspectRatio"
+              [class.border-error]="tireForm.get('aspectRatio')?.errors"
+              (input)="restrictMeasureDigits(tireForm.get('aspectRatio'), $event)" />
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Diámetro de rin</legend>
+            <input
+              type="number"
+              class="input w-full"
+              inputmode="decimal"
+              step="0.5"
+              placeholder="Rin (ej. 17 o 17.5)"
+              formControlName="rimDiameter"
+              [class.border-error]="tireForm.get('rimDiameter')?.errors"
+              (input)="restrictMeasureDigits(tireForm.get('rimDiameter'), $event)" />
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Prefijo</legend>
+            <div class="flex flex-wrap gap-2">
+              @for (prefix of prefixList(); track prefix.value) {
+                <label class="btn btn-dash" [class.btn-primary]="tireForm.get('prefix')?.value === prefix.value">
+                  <input type="radio" name="prefix" [value]="prefix.value" formControlName="prefix" class="hidden peer" />
+                  <span>{{ prefix.title }}</span>
+                </label>
+              }
+            </div>
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Construcción <span class="text-error">*</span></legend>
+            <div class="flex flex-wrap gap-2">
+              @for (construction of constructionList(); track construction.value) {
+                <label class="btn btn-dash" [class.btn-primary]="tireForm.get('construction')?.value === construction.value">
+                  <input type="radio" name="construction" [value]="construction.value" formControlName="construction" class="hidden peer" />
+                  <span>{{ construction.title }}</span>
+                </label>
+              }
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Rango de carga</legend>
+            <select class="select w-full" formControlName="loadRange">
+              @for (loadRange of loadRangeList(); track loadRange.title) {
+                <option [value]="loadRange.value">{{ loadRange.title }}</option>
+              }
+            </select>
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Índice de carga frontal</legend>
+            <input
+              type="number"
+              class="input w-full"
+              inputmode="numeric"
+              placeholder="91"
+              formControlName="loadIndexFront"
+              [class.border-error]="tireForm.get('loadIndexFront')?.errors"
+              (input)="restrictMeasureDigits(tireForm.get('loadIndexFront'), $event)" />
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Índice de carga trasero</legend>
+            <input
+              type="number"
+              class="input w-full"
+              inputmode="numeric"
+              placeholder="Solo si es dual"
+              formControlName="loadIndexRear"
+              [class.border-error]="tireForm.get('loadIndexRear')?.errors"
+              (input)="restrictMeasureDigits(tireForm.get('loadIndexRear'), $event)" />
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Rating de velocidad</legend>
+            <input
+              type="text"
+              class="input w-full"
+              placeholder="V, H, T..."
+              maxLength="1"
+              formControlName="speedRating"
+              [class.border-error]="tireForm.get('speedRating')?.errors" />
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Lonas</legend>
+            <input
+              type="text"
+              class="input w-full"
+              inputmode="number"
+              maxLength="2"
+              placeholder="4"
+              formControlName="plies" />
+            <p class="label">Opcional</p>
+          </fieldset>
+        </div>
+
+        <div class="md:col-span-6 text-right">
+          <div class="inline-flex items-end">
+            <button class="btn btn-success font-bold py-2 px-4 rounded-field"
+               [disabled]="(tire().id !== 0 && !hasChanges()) || isLoading()"><span
+                class="loading loading-spinner loading-lg" [hidden]="!isLoading()"></span>
+                Guardar</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<app-alert />

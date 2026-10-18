@@ -1,0 +1,26 @@
+<!-- Open the modal using ID.showModal() method -->
+<dialog #actionModal id="actionModal" class="modal">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Advertencia!</h3>
+    <p class="py-4">Esta a punto de <strong>{{titleAction()}}</strong> este registro. ¿Esta seguro?</p>
+    <div class="modal-action">
+
+      <form method="dialog">
+        <!-- if there is a button in form, it will close the modal -->
+        <button class="btn" [disabled]="actionModalService.modalState() === modalStateType.LOADING ">Cancelar</button>
+      </form>
+      <button
+        class="btn btn-info"
+        [disabled]="actionModalService.modalState() === modalStateType.LOADING"
+        (click)="onModalConfirmed()">
+        <span
+          class="loading loading-spinner loading-lg"
+          [hidden]="actionModalService.modalState() !== modalStateType.LOADING"></span>
+        Confirmar
+      </button>
+
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" [disabled]="actionModalService.modalState() === modalStateType.LOADING ">Cerrar</button></form>
+</dialog>

@@ -1,0 +1,83 @@
+<dialog #formModal id="brand_modal" class="modal modal-middle">
+  <div class="modal-box w-11/12 max-w-lg mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-base-content/10">
+      <div class="flex items-center gap-2">
+        <span
+          [class]="isEditing() ? 'icon-[akar-icons--edit]' : 'icon-[gridicons--create]'"
+          class="text-2xl text-primary"></span>
+        <h3 class="text-xl font-bold">
+          {{ isEditing() ? 'Editar Marca' : 'Nueva Marca' }}
+        </h3>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-circle btn-ghost"
+        [disabled]="isSubmitting()"
+        (click)="closeModal()">
+        ✕
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="brandForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-4">
+      <!-- Nombre -->
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Nombre de la marca <span class="text-error">*</span>
+          </legend>
+          <input
+            type="text"
+            class="input w-full"
+            placeholder="Ej. Michelin, Goodyear..."
+            formControlName="name"
+            [class.input-error]="brandForm.get('name')?.invalid && brandForm.get('name')?.touched" />
+        </fieldset>
+        <app-form-error-label [control]="brandForm.get('name')!"></app-form-error-label>
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend font-semibold">
+            Descripción <span class="text-xs opacity-60">(opcional)</span>
+          </legend>
+          <textarea
+            class="textarea w-full h-24"
+            placeholder="Breve descripción de la marca o notas adicionales..."
+            formControlName="description"></textarea>
+        </fieldset>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="modal-action flex justify-end gap-2 pt-4 border-t border-base-content/10">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          [disabled]="isSubmitting()"
+          (click)="closeModal()">
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="isSubmitting() || (brandForm.invalid && brandForm.touched)">
+          @if (isSubmitting()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Guardando...</span>
+          } @else {
+            <span class="icon-[tabler--device-floppy] text-xl"></span>
+            <span>{{ isEditing() ? 'Actualizar' : 'Guardar' }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Backdrop click closes modal when not submitting -->
+  <form method="dialog" class="modal-backdrop">
+    <button type="button" [disabled]="isSubmitting()" (click)="closeModal()">Cerrar</button>
+  </form>
+</dialog>

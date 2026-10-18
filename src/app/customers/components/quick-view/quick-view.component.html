@@ -1,0 +1,272 @@
+<dialog id="my_modal_3" class="modal">
+  <div class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-4xl p-0 flex flex-col max-h-[88dvh] overflow-hidden">
+    <!-- Close -->
+
+
+    <header class="flex items-start justify-between gap-4 p-5 sm:px-7 border-b border-base-content/15 shrink-0"><div class="min-w-0 flex-1"><div>
+        <h2 class="text-xl sm:text-2xl font-semibold break-words">
+          {{ customer()?.name }}
+        </h2>
+        <p class="text-sm opacity-70">Información en detalle</p>
+      </div></div><form method="dialog"><button type="submit" class="btn btn-sm btn-circle btn-ghost shrink-0" aria-label="Cerrar vista previa"><span class="icon-[tabler--x] text-xl" aria-hidden="true"></span></button></form></header>
+<div class="quick-view-content overflow-y-auto min-h-0 p-5 sm:px-7 flex flex-col gap-6">
+      <!-- ===== HEADER ===== -->
+
+
+      <!-- ===== INFORMACIÓN GENERAL ===== -->
+      <section class="space-y-3">
+        <h3 class="text-base font-semibold pb-1">Información General</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+          <!-- Nombre -->
+          <div class="sm:col-span-2 lg:col-span-3 min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(customer()?.name ?? '')"
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Nombre</p>
+              <p class="text-xl font-semibold break-words">{{ customer()?.name }}</p>
+            </div>
+          </div>
+
+          <!-- Tipo -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(customer()?.customerType ?? '')"
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Tipo de cliente</p>
+              <p class="font-medium break-words">{{ customer()?.customerType === 'LEGAL' ? 'Jurídico' : customer()?.customerType === 'NATURAL' ? 'Natural' : '—' }}</p>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(customer()?.email ?? '')"
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Correo</p>
+              <p class="font-semibold break-all break-words">
+                {{ customer()?.email }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Teléfono -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(customer()?.phone ?? '')"
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Teléfono</p>
+              <p class="font-medium break-words">{{ customer()?.phone | phoneFormat }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== UBICACIÓN ===== -->
+      <section class="space-y-3">
+        <h3 class="text-base font-semibold pb-1">Ubicación</h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+          <!-- Distrito -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(customer()?.district?.name ?? '')"
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Distrito</p>
+              <p class="font-medium break-words">
+                {{ customer()?.district?.name }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Municipio -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(customer()?.district?.municipality?.name ?? '')"
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Municipio</p>
+              <p class="font-medium break-words">
+                {{ customer()?.district?.municipality?.name }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Departamento -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="
+                copyText(
+                  customer()?.district?.municipality?.department?.name ?? ''
+                )
+              "
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Departamento</p>
+              <p class="font-medium break-words">
+                {{ customer()?.district?.municipality?.department?.name }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== DIRECCIÓN ===== -->
+      <section class="space-y-3">
+        <h3 class="text-base font-semibold pb-1">Dirección</h3>
+
+        <div class="border border-base-content/20 rounded-box p-4 flex gap-3 items-start">
+          <button
+            type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+            (click)="copyText(customer()?.address ?? '')"
+          >
+            <span class="icon-[tabler--copy]"></span>
+          </button>
+
+          <div class="whitespace-pre-wrap break-words flex-1">
+            {{ customer()?.address }}
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== INFO FISCAL ===== -->
+      @if (customer()?.isTaxPayer) {
+        <section class="space-y-3">
+          <h3 class="text-base font-semibold pb-1">
+            Información Fiscal
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+            <!-- Nombre Comercial -->
+            <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+              <button
+                type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+                (click)="copyText(customer()?.taxInfo?.tradeName ?? '')"
+              >
+                <span class="icon-[tabler--copy]"></span>
+              </button>
+
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-base-content/60">Nombre Comercial</p>
+                <p class="font-medium break-words">
+                  {{ customer()?.taxInfo?.tradeName }}
+                </p>
+              </div>
+            </div>
+
+            <!-- NRC -->
+            <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+              <button
+                type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+                (click)="copyText(customer()?.taxInfo?.nrc ?? '')"
+              >
+                <span class="icon-[tabler--copy]"></span>
+              </button>
+
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-base-content/60">NRC</p>
+                <p class="font-medium break-words">
+                  {{ customer()?.taxInfo?.nrc }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Documento -->
+            <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+              <button
+                type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+                (click)="copyText(customer()?.taxInfo?.taxDocumentNumber ?? '')"
+              >
+                <span class="icon-[tabler--copy]"></span>
+              </button>
+
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-base-content/60">Documento Fiscal</p>
+                <p class="font-medium break-words">
+                  {{ customer()?.taxInfo?.taxDocumentNumber }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Document Type -->
+            <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+              <button
+                type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+                (click)="
+                  copyText(customer()?.taxInfo?.taxDocumentType?.name ?? '')
+                "
+              >
+                <span class="icon-[tabler--copy]"></span>
+              </button>
+
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-base-content/60">Tipo de documento</p>
+                <p class="font-medium break-words">
+                  {{ customer()?.taxInfo?.taxDocumentType?.name }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <!-- Actividad Económica -->
+          <div class="border-b border-base-content/15 py-3 flex gap-3 items-start">
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="
+                copyText(customer()?.taxInfo?.economicActivity?.name ?? '')
+              "
+            >
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Actividad Económica</p>
+              <p class="font-medium break-words">
+                {{ customer()?.taxInfo?.economicActivity?.name }}
+              </p>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+<footer class="border-t border-base-content/15 p-4 sm:px-7 flex items-center justify-between gap-4 shrink-0 bg-base-100"><small class="text-base-content/60">@if (isCopy()) { <span role="status" class="text-success">Copiado</span> }</small><form method="dialog"><button type="submit" class="btn btn-primary">Cerrar</button></form></footer>
+
+
+  </div>
+
+
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera">Cerrar</button></form>
+</dialog>

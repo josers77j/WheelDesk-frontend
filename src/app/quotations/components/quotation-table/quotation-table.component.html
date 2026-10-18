@@ -1,0 +1,5 @@
+<div class="overflow-x-auto"><table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 w-full cursor-pointer"><thead><tr><th>#</th><th>Documento</th><th>Cliente</th><th>Total</th><th>Fecha de creación</th></tr></thead><tbody>
+@for (quotation of quotations(); track quotation.id) {
+<tr (click)="selected.emit(quotation.id === selectedId() ? 0 : quotation.id)" (keydown.enter)="selected.emit(quotation.id === selectedId() ? 0 : quotation.id)" tabindex="0" [attr.aria-selected]="quotation.id === selectedId()" [class.bg-gray-800]="quotation.id === selectedId()" [class.text-white]="quotation.id === selectedId()" class="transition-all ease-in delay-50 cursor-pointer"><td class="font-medium">{{ rowOffset() + $index + 1 }}</td><td>{{ quotation.documentNumber }}</td><td>{{ quotation.customerName ?? quotation.customer?.name ?? '—' }}</td><td>{{ quotation.total | currency: 'USD' }}</td><td>{{ quotation.createdAt | date: 'longDate' }}</td></tr>
+} @empty { <tr><th colspan="5">No hay registros</th></tr> }
+</tbody></table></div>

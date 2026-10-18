@@ -1,0 +1,305 @@
+<button type="button" class="btn btn-ghost mb-2" (click)="backToPreviusPage()"><span class="icon-[topcoat--back-light]"></span>
+  Regresar</button>
+<div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+  <p class="font-bold text-4xl">
+    {{ isEditing() ? 'Editar transferencia #' + transfer().id : 'Nueva transferencia' }}
+  </p>
+  <p class="text-xl font-thin">Todos los campos son obligatorios.</p>
+</div>
+
+<form [formGroup]="transferForm" (ngSubmit)="onSubmit()" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem] gap-5 items-start">
+<div class="min-w-0">
+         <div class="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-stretch mb-5">
+           <section class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 border border-base-300">
+             <h2 class="text-lg font-semibold mb-3">Origen</h2>
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+               <div>
+                 <fieldset class="fieldset">
+                   <legend class="fieldset-legend">Bodega de origen</legend>
+                   <app-combobox-form-control
+                     (click)="fromWarehouseTouched.set(true)"
+                     (valuesOutput)="setFromWarehouse($event)"
+                     (searchTextChange)="fromWarehouseComboboxOutput.set($event); fromWarehouseTouched.set(true)"
+                     [placeholderInput]="'bodega de origen'"
+                     [valuesResource]="fromWarehousesQuery.data() ?? []"
+                     [loading]="fromWarehousesQuery.isLoading()"
+                     [selectedValue]="selectedFromWarehouse()"
+                     [disable]="isEditing()"></app-combobox-form-control>
+                 </fieldset>
+               </div>
+
+               <div>
+                 <fieldset class="fieldset">
+                   <legend class="fieldset-legend">Zona de origen</legend>
+                   <app-combobox-form-control
+                     (click)="fromZoneTouched.set(true)"
+                     (valuesOutput)="setFromZone($event)"
+                     (searchTextChange)="fromZoneComboboxOutput.set($event); fromZoneTouched.set(true)"
+                     [placeholderInput]="'origen'"
+                     [valuesResource]="fromZonesQuery.data() ?? []"
+                     [loading]="fromZonesQuery.isLoading()"
+                     [isError]="!!transferForm.get('fromZoneId')?.errors"
+                     [selectedValue]="selectedFromZone()"
+                     [disable]="isEditing()"></app-combobox-form-control>
+                  </fieldset>
+                  <app-form-error-label [control]="transferForm.get('fromZoneId')!"></app-form-error-label>
+               </div>
+             </div>
+           </section>
+
+           <section class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 border border-base-300">
+             <h2 class="text-lg font-semibold mb-3">Destino</h2>
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+               <div>
+                 <fieldset class="fieldset">
+                   <legend class="fieldset-legend">Bodega de destino</legend>
+                   <app-combobox-form-control
+                     (click)="toWarehouseTouched.set(true)"
+                     (valuesOutput)="setToWarehouse($event)"
+                     (searchTextChange)="toWarehouseComboboxOutput.set($event); toWarehouseTouched.set(true)"
+                     [placeholderInput]="'bodega de destino'"
+                     [valuesResource]="toWarehousesQuery.data() ?? []"
+                     [loading]="toWarehousesQuery.isLoading()"
+                     [selectedValue]="selectedToWarehouse()"
+                     [disable]="isEditing()"></app-combobox-form-control>
+                 </fieldset>
+               </div>
+
+               <div>
+                 <fieldset class="fieldset">
+                   <legend class="fieldset-legend">Zona de destino</legend>
+                   <app-combobox-form-control
+                     (click)="toZoneTouched.set(true)"
+                     (valuesOutput)="setToZone($event)"
+                     (searchTextChange)="toZoneComboboxOutput.set($event); toZoneTouched.set(true)"
+                     [placeholderInput]="'destino'"
+                     [valuesResource]="toZonesQuery.data() ?? []"
+                     [loading]="toZonesQuery.isLoading()"
+                     [isError]="!!transferForm.get('toZoneId')?.errors"
+                     [selectedValue]="selectedToZone()"
+                     [disable]="isEditing()"></app-combobox-form-control>
+                  </fieldset>
+                  <app-form-error-label [control]="transferForm.get('toZoneId')!"></app-form-error-label>
+               </div>
+             </div>
+           </section>
+         </div>
+
+         @if (!selectedFromZone()) {
+           <div class="alert alert-warning mb-5" role="status">
+             <span>Seleccione una zona de origen con stock para agregar productos.</span>
+           </div>
+         }
+
+         @if (selectedFromZone()) {
+           <section class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+             <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+               <h2 class="text-lg font-semibold">Stock por zona</h2>
+               <span class="badge badge-neutral">{{ selectedFromZone()?.name }}</span>
+             </div>
+             @if (zoneProductsQuery.isLoading()) {
+               <p class="text-sm opacity-70">Cargando productos con stock...</p>
+             } @else if (zoneProductsQuery.isError()) {
+               <div class="alert alert-error" role="alert">
+                 <span>No se pudo cargar el stock de la zona.</span>
+               </div>
+             } @else if ((zoneProductsQuery.data() ?? []).length === 0) {
+               <div class="alert alert-info" role="status">
+                 <span>Esta zona no tiene productos con stock.</span>
+               </div>
+             } @else {
+               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                 @for(product of zoneProductsQuery.data() ?? []; track product.id) {
+                   <button
+                     type="button"
+                     class="flex min-w-0 flex-col items-start gap-2 rounded-lg bg-base-100 px-3 py-2 text-left hover:bg-base-300"
+                     (click)="selectZoneProduct(product)">
+                     <span class="w-full truncate">{{ product.name }}</span>
+                     <span class="badge badge-warning">
+                       {{ product.zoneStock }} disponibles
+                     </span>
+                   </button>
+                 }
+               </div>
+             }
+           </section>
+         }
+
+        <section class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 flex flex-col gap-3 border border-base-300">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <h1 class="text-2xl font-bold sm:mr-auto">Detalle de productos</h1>
+          <button
+            class="btn btn-success w-full sm:w-auto"
+            type="button"
+            [disabled]="!selectedFromZone()"
+            (click)="onCreateSelected();openModal()">
+            <span class="icon-[gridicons--create] text-2xl"></span>
+            Agregar producto
+          </button>
+        </div>
+
+        <!-- products -->
+         <div class="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 mt-3">
+          <table class="table table-zebra">
+            <!-- head -->
+            <thead>
+              <tr>
+                <th></th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for(product of this.detailsArray.controls; track $index){
+                <tr (click)="onChangeIdProduct($index)"
+                  [class.bg-gray-800]="$index === this.selectedIndexProduct()"
+                  [class.text-white]="$index === this.selectedIndexProduct()"
+                  class="transition-all ease-in delay-50 cursor-pointer">
+                  <th>{{$index+1}}</th>
+                  <td>{{product.value?.name}}</td>
+                  <td>{{product.value?.quantity}}</td>
+
+                  <td class>
+                      <button class="btn btn-xs btn-ghost btn-error inline-flex"
+                      (click)="$event.stopPropagation(); onDeleteProduct($index)">
+                        <span class="icon-[streamline--delete-1-solid]"></span>
+                      </button>
+                  </td>
+
+                </tr>
+              }
+              @empty {
+                <tr>
+                  <th colspan="99" class="text-sm opacity-60">Sin productos. Agrega al menos uno.</th>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        </section>
+</div><aside class="min-w-0 xl:sticky xl:top-20"><section class="bg-base-100 rounded-box border border-base-300 p-5"><h2 class="font-semibold text-lg">Revisión y guardado</h2>          <div class="flex items-center justify-between gap-3 mt-5 mb-4">
+          <h1 class="text-lg font-semibold">Total productos</h1>
+          <h1 class="text-2xl font-semibold">{{ detailsArray.length }}</h1>
+        </div>
+
+         <div class="md:col-span-12 text-right">
+          <div class="w-full">
+            <button type="submit" class="btn btn-primary w-full font-bold"
+               [disabled]="isLoading() || transferForm.invalid || (isEditing() && !hasChanges())">
+              @if(isLoading()){
+                <span class="loading loading-spinner loading-lg"></span>
+                <span>Guardando...</span>
+              } @else {
+                <span>{{ isEditing() ? 'Actualizar' : 'Realizar transferencia' }}</span>
+              }
+            </button>
+          </div>
+        </div>
+
+<app-review-checklist [items]="reviewItems()" /></section></aside>
+</form>
+
+@if(selectedIndexProduct() !== null){
+  <!-- Floating Action Bar Contextual - Producto seleccionado -->
+  <div class="border fixed bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md sm:max-w-none sm:w-fit left-1/2 -translate-x-1/2 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl rounded-box px-4 py-2.5 sm:px-4 sm:py-2 flex items-center justify-between sm:justify-start gap-1 sm:gap-2 md:gap-3 animate-fadeIn border-base-300">
+    <!-- Info del producto seleccionado -->
+    <div class="flex items-center gap-1.5 sm:gap-2 border-r border-base-300 pr-2.5 sm:pr-3 mr-0.5 sm:mr-1">
+      <span class="badge badge-primary badge-sm font-bold">#{{ selectedIndexProduct()! + 1 }}</span>
+    </div>
+
+    <!-- Botón Modificar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="onModifySelected();openModal()"
+      title="Modificar"
+      aria-label="Modificar">
+      <span class="icon-[akar-icons--edit] text-xl sm:text-lg text-info"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Editar</span>
+    </button>
+
+    <!-- Botón Eliminar -->
+    <button
+      class="btn btn-sm btn-ghost flex-1 sm:flex-initial px-2 sm:px-3 sm:gap-1.5"
+      (click)="onDeleteProduct(selectedIndexProduct()!)"
+      title="Eliminar"
+      aria-label="Eliminar">
+      <span class="icon-[material-symbols--delete] text-xl sm:text-lg text-error"></span>
+      <span class="hidden sm:inline text-xs sm:text-sm">Remover</span>
+    </button>
+
+    <!-- Botón Deseleccionar / Cerrar -->
+    <button
+      class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 ml-1"
+      (click)="clearProductSelection()"
+      title="Deseleccionar"
+      aria-label="Deseleccionar">
+      ✕
+    </button>
+  </div>
+}
+
+<dialog #productModal class="modal">
+
+  <div class="modal-box w-11/12 max-w-5xl">
+    <h3 class="text-lg font-bold">Agregar productos</h3>
+    <p class="py-4">Selecciona el producto y la cantidad a transferir</p>
+
+  <form [formGroup]="productForm" (ngSubmit)="onSaveProduct()">
+      <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Producto</legend>
+            <app-combobox-form-control
+              (click)="productTouched.set(true)"
+              (valuesOutput)="setProduct($event)"
+              (searchTextChange)="productComboboxOutput.set($event); productTouched.set(true)"
+              [placeholderInput]="'producto'"
+              [valuesResource]="productsQuery.data() ?? []"
+              [loading]="productsQuery.isLoading()"
+              [isError]="!!productForm.get('productId')?.errors"
+              [selectedValue]="selectedProduct()"
+              [disable]="!selectedFromZone() || selectedIndexProduct() !== null"></app-combobox-form-control>
+            <p class="label">Opcional</p>
+          </fieldset>
+          <app-form-error-label [control]="productForm.get('productId')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-3">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Cantidad</legend>
+            <input
+              class="input w-full"
+              placeholder="4"
+              formControlName="quantity"
+              type="number"
+              inputmode="numeric"
+             />
+          </fieldset>
+           <app-form-error-label [control]="productForm.get('quantity')!"></app-form-error-label>
+           @if (selectedProduct()?.zoneStock !== undefined && selectedProduct()?.zoneStock !== null) {
+             <p class="text-xs opacity-70 mt-1">
+               Stock disponible en origen: {{ selectedProduct()?.zoneStock }}
+             </p>
+           }
+         </div>
+
+      </div>
+    <div class="flex justify-end mt-4">
+       <button class="btn btn-success" [disabled]="!productForm.dirty || productForm.invalid">
+        Guardar
+      </button>
+    </div>
+  </form>
+
+  <div class="modal-action">
+    <form method="dialog">
+      <button class="btn" (click)="closeModal()" type="button">Cerrar</button>
+    </form>
+  </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="closeModal()">Cerrar</button></form>
+</dialog>
+<app-alert />

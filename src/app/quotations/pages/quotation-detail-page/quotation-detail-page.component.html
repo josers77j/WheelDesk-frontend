@@ -1,0 +1,90 @@
+<app-alert />
+<a routerLink="/quotations/list" class="btn btn-ghost mb-4"
+  >Volver a cotizaciones</a
+>
+@if (!validId()) {
+  <div class="alert alert-error" role="alert">
+    El identificador de cotización no es válido.
+  </div>
+} @else if (quotation.isPending()) {
+  <p role="status">Cargando cotización…</p>
+} @else if (quotation.isError()) {
+  <div class="alert alert-error" role="alert">
+    <span>No se pudo cargar la cotización.</span
+    ><button class="btn btn-sm" (click)="quotation.refetch()">
+      Reintentar
+    </button>
+  </div>
+} @else {
+  @if (quotation.data(); as document) {
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5">
+    <h1 class="text-2xl font-semibold mb-4">
+      Cotización {{ document.documentNumber }}
+    </h1>
+    <div class="flex flex-wrap gap-2 mb-4"><a class="btn btn-info btn-sm" [routerLink]="['/quotations/edit', document.id]">Modificar</a><app-quotation-document-actions [id]="document.id" /></div>
+    <div class="grid gap-2 mb-6">
+      <p>
+        <strong>Cliente:</strong>
+        {{ document.customerName ?? document.customer?.name ?? "Sin cliente" }}
+      </p>
+      <p>
+        <strong>Dirección:</strong>
+        {{ document.customerAddress ?? "No registrada" }}
+      </p>
+      <p>
+        <strong>Fecha:</strong> {{ document.createdAt | date: "dd/MM/yyyy" }}
+      </p>
+    </div>
+    </div>
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5">
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-right">Precio unitario</th>
+            <th class="text-right">Subtotal</th>
+            <th class="text-right">Descuento</th>
+            <th class="text-right">Impuesto</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of document.details; track item.id) {
+            <tr>
+              <td>{{ item.productName }}</td>
+              <td class="text-right">{{ item.quantity }}</td>
+              <td class="text-right">{{ item.unitPrice | currency: "USD" }}</td>
+              <td class="text-right">{{ item.subtotal | currency: "USD" }}</td>
+              <td class="text-right">
+                {{ item.discountAmount | currency: "USD" }}
+              </td>
+              <td class="text-right">{{ item.taxAmount | currency: "USD" }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    </div>
+    <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5">
+    <dl class="grid grid-cols-2 gap-2 max-w-sm ml-auto my-6">
+      <dt>Subtotal</dt>
+      <dd class="text-right">{{ document.subtotal | currency: "USD" }}</dd>
+      <dt>Descuento global</dt>
+      <dd class="text-right">
+        {{ document.globalDiscount | currency: "USD" }}
+      </dd>
+      <dt>IVA</dt>
+      <dd class="text-right">{{ document.iva | currency: "USD" }}</dd>
+      <dt class="font-bold">Total</dt>
+      <dd class="text-right font-bold">
+        {{ document.total | currency: "USD" }}
+      </dd>
+    </dl>
+    @if (document.notes) {
+      <h2 class="font-semibold">Observaciones</h2>
+      <p class="whitespace-pre-wrap">{{ document.notes }}</p>
+    }
+    </div>
+  }
+}

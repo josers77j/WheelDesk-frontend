@@ -1,0 +1,48 @@
+<button type="button" class="btn btn-ghost mb-2" (click)="backToPreviusPage()"><span class="icon-[topcoat--back-light]"></span>
+  Regresar</button>
+<div class="bg-base-100 rounded-box shadow-lg p-4 px-4 md:p-8 mb-6">
+  <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 lg:grid-cols-3">
+    <div>
+      <p class="font-bold text-6xl">Usuarios</p>
+      <p class="text-xl font-thin">Se recomienda llenar todos los campos.</p>
+    </div>
+
+    <div class="lg:col-span-2">
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()"
+        class="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm">
+
+        <!-- Name -->
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Usuario</legend>
+            <input type="text" class="input w-full" placeholder="Escribir nombre de un usuario" formControlName="name"
+              [class.border-error]="userForm.get('name')?.errors" />
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="userForm.get('name')!"></app-form-error-label>
+        </div>
+
+        <!-- Email -->
+        <div class="md:col-span-6">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Correo</legend>
+            <input type="text" class="input w-full" placeholder="Escribe un correo válido" formControlName="email"
+              [class.border-error]="userForm.get('email')?.errors" />
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="userForm.get('email')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-6 text-right">
+          <div class="inline-flex items-end">
+             <button class="btn btn-success font-bold py-2 px-4 rounded-field" [disabled]="isLoading() || (user().id !== 0 && !hasChanges())"><span
+                class="loading loading-spinner loading-lg" [hidden]="!isLoading()"></span>Guardar</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<app-alert />

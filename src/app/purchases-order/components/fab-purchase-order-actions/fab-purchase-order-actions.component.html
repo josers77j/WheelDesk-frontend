@@ -1,0 +1,48 @@
+
+
+<div class="fab">
+  <button
+    tabindex="0" role="button" class="btn btn-lg btn-circle btn-info">
+    <svg
+      aria-label="New"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke-width="2"
+      stroke="currentColor"
+      class="size-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+
+  </button>
+  <!-- buttons that show up when FAB is open -->
+
+  <!-- Reject -->
+  <button
+    class="btn btn-neutral w-full justify-start"
+    onclick="actionModal.showModal()"
+    (click)="onOpenModal('Rechazar')">
+    <span class="icon-[fluent--dismiss-circle-12-regular] text-2xl"></span>
+    Rechazar
+  </button>
+
+  <!-- Approve -->
+  <button
+    class="btn btn-neutral w-full justify-start"
+    onclick="actionModal.showModal()"
+    (click)="onOpenModal('Aprobar')">
+    <span class="icon-[proicons--checkmark-circle] text-2xl"></span>
+    Aprobar
+  </button>
+
+  <!-- Modify -->
+  <button
+    class="btn btn-neutral w-full justify-start"
+    [routerLink]="['/purchase-orders/detail',idSelected()]">
+    <span class="icon-[akar-icons--edit] text-2xl"></span>
+    Modificar
+  </button>
+
+</div>
+
+<app-action-modal [titleAction]="modalTitleAction()"></app-action-modal>

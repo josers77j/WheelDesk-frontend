@@ -1,0 +1,59 @@
+<div class="flex flex-col gap-3">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-1">
+  @if (rangeText()) {
+    <p class="text-sm opacity-60 sm:mr-auto">{{ rangeText() }}</p>
+  }
+
+    <ng-content select="[paginationLimit]" />
+  </div>
+
+  @if (totalPages() > 1) {
+    <div class="join flex justify-start sm:self-end" role="navigation" aria-label="Paginación">
+      <button
+        class="join-item btn"
+        [class.btn-disabled]="!hasPrevious()"
+        [disabled]="!hasPrevious()"
+        [routerLink]="[]"
+        [queryParams]="{ page: safeCurrent() - 1 }"
+        [queryParamsHandling]="'merge'"
+        (click)="onPageChange()"
+        aria-label="Página anterior"
+      >
+        ‹
+      </button>
+
+      @for (page of paginationList(); track $index) {
+        @if (typeof page === 'number') {
+          <button
+            class="join-item btn"
+            [class.btn-primary]="page === safeCurrent()"
+            [attr.aria-current]="page === safeCurrent() ? 'page' : null"
+            [routerLink]="[]"
+            [queryParams]="{ page: page }"
+            [queryParamsHandling]="'merge'"
+            (click)="onPageChange()"
+            [attr.aria-label]="'Ir a la página ' + page"
+          >
+            {{ page }}
+          </button>
+        }
+        @if (page === '...') {
+          <button class="join-item btn btn-disabled" aria-hidden="true">...</button>
+        }
+      }
+
+      <button
+        class="join-item btn"
+        [class.btn-disabled]="!hasNext()"
+        [disabled]="!hasNext()"
+        [routerLink]="[]"
+        [queryParams]="{ page: safeCurrent() + 1 }"
+        [queryParamsHandling]="'merge'"
+        (click)="onPageChange()"
+        aria-label="Página siguiente"
+      >
+        ›
+      </button>
+    </div>
+  }
+</div>

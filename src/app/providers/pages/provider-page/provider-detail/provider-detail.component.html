@@ -1,0 +1,63 @@
+<button type="button" class="btn btn-ghost mb-2" (click)="backToPreviusPage()"><span class="icon-[topcoat--back-light]"></span>
+  Regresar</button>
+<div class="bg-base-100 rounded-box shadow-lg p-4 px-4 md:p-8 mb-6">
+  <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 lg:grid-cols-3">
+    <div>
+      <p class="font-bold text-6xl">Proveedores</p>
+      <p class="text-xl font-thin">Se recomienda llenar todos los campos.</p>
+    </div>
+
+    <div class="lg:col-span-2">
+      <form [formGroup]="providerForm" (ngSubmit)="onSubmit()"
+        class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-5">
+
+        <div class="md:col-span-5">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Nombre del proveedor</legend>
+            <input
+              type="text"
+              class="input w-full"
+              placeholder="Escribir nombre del proveedor"
+              formControlName="name"
+              [class.border-error]="providerForm.get('name')?.errors" />
+            <p class="label"><span class="text-error">*</span>Requerido</p>
+          </fieldset>
+          <app-form-error-label [control]="providerForm.get('name')!"></app-form-error-label>
+        </div>
+
+        <div class="md:col-span-5">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Descripción</legend>
+            <textarea
+              class="textarea h-24 w-full"
+              placeholder="Redactar una descripción del proveedor"
+              formControlName="description"></textarea>
+            <div class="label">Opcional</div>
+          </fieldset>
+        </div>
+
+      <div class="col-span-full"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4" [formGroup]="providerForm">
+  @for (field of ['nrc', 'nit', 'phone', 'email']; track field) {
+    <div class="min-w-0">
+      <label class="fieldset">
+        <span class="fieldset-legend">{{ field === 'nrc' ? 'NRC' : field === 'nit' ? 'NIT' : field === 'phone' ? 'Teléfono' : 'Correo electrónico' }} <span class="text-xs opacity-60">(opcional)</span></span>
+        <input class="input w-full" [type]="field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'" [formControlName]="field"
+          [class.input-error]="providerForm.get(field)?.invalid && providerForm.get(field)?.touched" />
+      </label>
+      <app-form-error-label [control]="providerForm.get(field)!"></app-form-error-label>
+    </div>
+  }
+</div></div>
+        <div class="md:col-span-6 text-right">
+          <div class="inline-flex items-end">
+             <button class="btn btn-success font-bold py-2 px-4 rounded-field" [disabled]="isLoading() || (provider().id !== 0 && !hasChanges())"><span
+                class="loading loading-spinner loading-lg" [hidden]="!isLoading()"></span>Guardar</button>
+          </div>
+        </div>
+
+</form>
+    </div>
+  </div>
+</div>
+
+<app-alert />

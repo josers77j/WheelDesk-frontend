@@ -1,0 +1,7 @@
+@if(brandResource.isLoading()){
+<app-form-skeleton></app-form-skeleton>
+}
+
+@if(brandResource.value()){
+<app-brand-detail [brand]="brandResource.value()!"></app-brand-detail>
+}

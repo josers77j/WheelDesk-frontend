@@ -1,0 +1,95 @@
+<!-- You can open the modal using ID.showModal() method -->
+
+<dialog id="my_modal_3" class="modal">
+  <div class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-4xl p-0 flex flex-col max-h-[88dvh] overflow-hidden">
+
+    <header class="flex items-start justify-between gap-4 p-5 sm:px-7 border-b border-base-content/15 shrink-0"><div class="min-w-0 flex-1"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-semibold break-words">Marca</h2>
+          <p class="text-sm opacity-70">Información en detalle</p>
+        </div>
+      </div></div><form method="dialog"><button type="submit" class="btn btn-sm btn-circle btn-ghost shrink-0" aria-label="Cerrar vista previa"><span class="icon-[tabler--x] text-xl" aria-hidden="true"></span></button></form></header>
+<div class="quick-view-content overflow-y-auto min-h-0 p-5 sm:px-7 flex flex-col gap-6">
+
+      <!-- Header -->
+
+
+      <!-- Información General -->
+      <section class="space-y-3">
+
+        <h3 class="text-base font-semibold pb-1">
+          Información General
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+
+          <!-- Nombre -->
+          <div class="sm:col-span-2 lg:col-span-3 min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+
+            <button
+              type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+              (click)="copyText(brand()?.name ?? '')">
+              <span class="icon-[tabler--copy]"></span>
+            </button>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Nombre</p>
+              <p class="text-xl font-semibold wrap-break-words break-words">
+                {{brand()?.name}}
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Fecha Creación -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Fecha de creación</p>
+              <p class="font-medium break-words">
+                {{brand()?.createdAt | date:'longDate':'America/El_Salvador'}}
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- Descripción / Observaciones -->
+      <section class="space-y-3">
+
+        <h3 class="text-base font-semibold pb-1">
+          Observaciones
+        </h3>
+
+        <div class="border border-base-content/20 rounded-box p-4 flex gap-3 items-start">
+
+          <!-- Botón copiar -->
+          <button
+            type="button" aria-label="Copiar valor" class="order-last btn btn-ghost btn-xs btn-square shrink-0"
+            (click)="copyText(brand()?.description ?? '')">
+            <span class="icon-[tabler--copy]"></span>
+          </button>
+
+          <!-- Texto -->
+          <div class="whitespace-pre-wrap wrap-break-words flex-1">
+            {{brand()?.description}}
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+<footer class="border-t border-base-content/15 p-4 sm:px-7 flex items-center justify-between gap-4 shrink-0 bg-base-100"><small class="text-base-content/60">@if (isCopy()) { <span role="status" class="text-success">Copiado</span> }</small><form method="dialog"><button type="submit" class="btn btn-primary">Cerrar</button></form></footer>
+
+
+
+  </div>
+
+
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera">Cerrar</button></form>
+</dialog>

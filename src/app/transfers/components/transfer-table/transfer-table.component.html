@@ -1,0 +1,56 @@
+<div class="overflow-x-auto">
+
+  <table class="table table-zebra [&_thead_th]:text-xs [&_thead_th]:text-base-content/60 [&_thead_th]:bg-base-200/60 [&_td]:py-4 [&_th]:py-3 min-w-max cursor-pointer">
+    <!-- head -->
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Origen</th>
+        <th>Destino</th>
+        <th>Productos</th>
+        <th>Fecha de creación</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows  -->
+      @for(transfer of transfers; track transfer.id; ){
+      <tr (click)="changeRowSelectedStatus(transfer.id)"
+        [class.bg-gray-800]="transfer.id === this.transferService.transferIdSelected()"
+        [class.text-white]="transfer.id === this.transferService.transferIdSelected()"
+
+        class="transition-all ease-in delay-50 cursor-pointer">
+
+        <th>{{ rowOffset + $index + 1 }}</th>
+        <td>{{transfer.fromZone?.name}}</td>
+        <td>{{transfer.toZone?.name}}</td>
+        <td>{{transfer.details.length}}</td>
+        <td>{{transfer.createdAt | date:'longDate':'America/El_Salvador'}}</td>
+        <td>
+          <span
+            class="badge"
+            [class.badge-success]="transfer.status === transferStatus.COMPLETED"
+            [class.badge-error]="transfer.status === transferStatus.CANCELLED"
+            [class.badge-warning]="transfer.status === transferStatus.PENDING">
+            {{transfer.status | TransferStatus }}
+          </span>
+        </td>
+
+      </tr>
+      }
+      <!-- empty -->
+      @empty {
+      @if(isLoading){
+      <tr>
+        <td colspan="99"><app-skeleton [limit]="skeletonLimit"></app-skeleton></td>
+      </tr>
+      } @else {
+      <tr>
+        <th>No hay registros</th>
+      </tr>
+      }
+      }
+
+    </tbody>
+  </table>
+</div>

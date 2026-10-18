@@ -1,0 +1,117 @@
+<dialog id="my_modal_3" class="modal">
+  <div class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-4xl p-0 flex flex-col max-h-[88dvh] overflow-hidden">
+
+    <header class="flex items-start justify-between gap-4 p-5 sm:px-7 border-b border-base-content/15 shrink-0"><div class="min-w-0 flex-1"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-semibold break-words">Transferencia #{{ transfer()?.id }}</h2>
+          <p class="text-sm opacity-70">Información en detalle</p>
+        </div>
+        <span
+          class="badge"
+          [class.badge-success]="transfer()?.status === 'COMPLETED'"
+          [class.badge-error]="transfer()?.status === 'CANCELLED'"
+          [class.badge-warning]="transfer()?.status === 'PENDING'">
+          {{transfer()?.status | TransferStatus }}
+        </span>
+      </div></div><form method="dialog"><button type="submit" class="btn btn-sm btn-circle btn-ghost shrink-0" aria-label="Cerrar vista previa"><span class="icon-[tabler--x] text-xl" aria-hidden="true"></span></button></form></header>
+<div class="quick-view-content overflow-y-auto min-h-0 p-5 sm:px-7 flex flex-col gap-6">
+
+      <!-- Header -->
+
+
+      <!-- Información General -->
+      <section class="space-y-3">
+
+        <h3 class="text-base font-semibold pb-1">
+          Información General
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+
+          <!-- Origen -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Zona de origen</p>
+              <p class="font-semibold wrap-break-words break-words">
+                {{transfer()?.fromZone?.name}}
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Destino -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Zona de destino</p>
+              <p class="font-semibold wrap-break-words break-words">
+                {{transfer()?.toZone?.name}}
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Fecha Creación -->
+          <div class=" min-w-0 border-b border-base-content/15 py-3 flex gap-3 items-start">
+
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-base-content/60">Fecha de creación</p>
+              <p class="font-medium break-words">
+                {{transfer()?.createdAt | date:'longDate':'America/El_Salvador'}}
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- Productos -->
+      <section class="space-y-3">
+
+        <h3 class="text-base font-semibold pb-1">
+          Productos transferidos
+        </h3>
+
+        @if((transfer()?.details?.length ?? 0) > 0){
+          <div class="overflow-x-auto rounded-box border border-base-content/20 bg-base-100">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for(detail of transfer()?.details; track $index){
+                  <tr>
+                    <th>{{$index + 1}}</th>
+                    <td>{{detail.product.name}}</td>
+                    <td>{{detail.quantity}}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="border border-base-content/20 rounded-box p-4">
+            <p class="opacity-60">Sin productos registrados.</p>
+          </div>
+        }
+
+      </section>
+
+    </div>
+<footer class="border-t border-base-content/15 p-4 sm:px-7 flex items-center justify-between gap-4 shrink-0 bg-base-100"><small class="text-base-content/60">@if (isCopy()) { <span role="status" class="text-success">Copiado</span> }</small><form method="dialog"><button type="submit" class="btn btn-primary">Cerrar</button></form></footer>
+
+
+
+  </div>
+
+
+
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera">Cerrar</button></form>
+</dialog>

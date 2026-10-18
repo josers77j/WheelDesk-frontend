@@ -1,0 +1,7 @@
+@if(userResource.isLoading()){
+<app-form-skeleton></app-form-skeleton>
+}
+
+@if(userResource.value()){
+<app-user-detail [user]="userResource.value()!"></app-user-detail>
+}
