@@ -1,0 +1,22 @@
+<header class="entry-header border-b border-base-300">
+  <div class="min-w-0">
+    <h2 class="text-xl font-bold break-words">{{ title() }}</h2>
+    <p class="text-sm text-base-content/60 mt-1">{{ description() }}</p>
+  </div>
+  <button type="button" class="btn btn-sm btn-circle btn-ghost shrink-0" aria-label="Cerrar producto" (click)="closed.emit()">
+    <span class="icon-[tabler--x] text-xl" aria-hidden="true"></span>
+  </button>
+</header>
+<div class="entry-body">
+  <aside class="entry-catalog bg-base-200/60 border-base-300">
+    <h3 class="flex items-center gap-2 font-semibold text-sm mb-4">
+      <span class="icon-[tabler--package] text-lg" aria-hidden="true"></span>Producto del catálogo
+    </h3>
+    <ng-content select="[productSelection]" />
+  </aside>
+  <div class="entry-fields min-w-0"><ng-content select="[productFields]" /></div>
+</div>
+<footer class="entry-footer border-t border-base-300">
+  <p class="entry-note text-xs text-base-content/60">{{ footerNote() }}</p>
+  <div class="entry-actions"><ng-content select="[productActions]" /></div>
+</footer>

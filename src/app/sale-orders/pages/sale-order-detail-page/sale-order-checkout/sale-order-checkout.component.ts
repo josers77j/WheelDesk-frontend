@@ -1,3 +1,4 @@
+import { ProductEntryLayoutComponent } from '../../../../shared/components/product-entry-layout/product-entry-layout.component';
 import { ReviewChecklistComponent, ReviewItem } from '../../../../shared/components/review-checklist/review-checklist.component';
 import { PdfPreviewComponent } from '../../../../shared/components/pdf-preview/pdf-preview.component';
 import {
@@ -85,6 +86,7 @@ type CheckoutPaymentFormGroup = FormGroup<{
 @Component({
   selector: 'app-sale-order-checkout',
   imports: [
+    ProductEntryLayoutComponent,
     ReviewChecklistComponent,
     ReactiveFormsModule,
     AlertComponent,

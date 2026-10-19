@@ -1,3 +1,4 @@
+import { ProductEntryLayoutComponent } from '../../../../shared/components/product-entry-layout/product-entry-layout.component';
 import { ReviewChecklistComponent, ReviewItem } from '../../../../shared/components/review-checklist/review-checklist.component';
 import {
   Component,
@@ -52,6 +53,7 @@ type TransferProductFormGroup = FormGroup<{
 @Component({
   selector: 'app-transfer-detail',
   imports: [
+    ProductEntryLayoutComponent,
     ReviewChecklistComponent,
     ReactiveFormsModule,
     AlertComponent,

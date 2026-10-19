@@ -590,174 +590,108 @@
   </div>
 }
 
-<dialog #itemModal class="modal">
-  <div class="modal-box w-11/12 max-w-5xl">
-    <button class="btn btn-xs btn-circle btn-ghost opacity-60 hover:opacity-100 absolute top-3 right-3"
-      (click)="closeItemModal()"
-      title="Cerrar"
-      aria-label="Cerrar">
-      ✕
-    </button>
-    <h3 class="text-lg font-bold">Agregar productos</h3>
-    <div class="alert alert-info py-2 px-3 mt-2 mb-3 text-sm" role="status">
-      <span>Elige el producto y después la bodega y la zona desde donde se despacha: cada línea se cobra desde una zona. Solo aparecen productos con existencias disponibles.</span>
-    </div>
-
-    <div class="flex gap-1 flex-wrap mb-3" role="group" aria-label="Tipo de producto">
-      <button type="button" class="btn btn-sm"
-        [class.btn-primary]="productTypeFilter() === ''"
-
-        (click)="setProductTypeFilter('')">Todos</button>
-      <button type="button" class="btn btn-sm"
-        [class.btn-primary]="productTypeFilter() === 'TIRE'"
-
-        (click)="setProductTypeFilter('TIRE')">Llantas</button>
-      <button type="button" class="btn btn-sm"
-        [class.btn-primary]="productTypeFilter() === 'SUPPLY'"
-
-        (click)="setProductTypeFilter('SUPPLY')">Suministros</button>
-      <button type="button" class="btn btn-sm"
-        [class.btn-primary]="productTypeFilter() === 'SERVICE'"
-
-        (click)="setProductTypeFilter('SERVICE')">Servicios</button>
-    </div>
-
+<dialog #itemModal class="modal" aria-label="Producto de la venta">
+  <div class="modal-box w-11/12 max-w-5xl max-h-none p-0 border border-base-300 overflow-hidden">
     <form [formGroup]="itemForm" (ngSubmit)="onSaveItem()">
-      @if (itemForm.touched && itemValidationMessages().length > 0) {
-        <div class="alert alert-error mb-4" role="alert">
-          <div>
-            <p class="font-semibold">Revise los datos del producto</p>
-            <ul class="list-disc pl-5">
-              @for (message of itemValidationMessages(); track message) { <li>{{ message }}</li> }
-            </ul>
+      <app-product-entry-layout [title]="selectedIndexItem() === null ? 'Agregar producto' : 'Modificar producto'"
+        description="Producto, zona de salida e importes de la venta."
+        footerNote="La zona identifica de dónde se descuenta el producto." (closed)="closeItemModal()">
+        <div productSelection>
+          <div class="flex flex-wrap gap-2 mb-4 p-1" role="group" aria-label="Tipo de producto">
+            <button type="button" class="btn btn-sm" [class.btn-primary]="productTypeFilter() === ''" (click)="setProductTypeFilter('')">Todos</button>
+            <button type="button" class="btn btn-sm" [class.btn-primary]="productTypeFilter() === 'TIRE'" (click)="setProductTypeFilter('TIRE')">Llantas</button>
+            <button type="button" class="btn btn-sm" [class.btn-primary]="productTypeFilter() === 'SUPPLY'" (click)="setProductTypeFilter('SUPPLY')">Suministros</button>
+            <button type="button" class="btn btn-sm" [class.btn-primary]="productTypeFilter() === 'SERVICE'" (click)="setProductTypeFilter('SERVICE')">Servicios</button>
           </div>
-        </div>
-      }
-      <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
-        <div class="md:col-span-6">
-          <fieldset class="fieldset">
+          <fieldset class="fieldset p-1">
             <legend class="fieldset-legend">Producto</legend>
-            <app-combobox-form-control
-              (click)="productTouched.set(true)"
-              (valuesOutput)="setItemProduct($event)"
+            <app-combobox-form-control (click)="productTouched.set(true)" (valuesOutput)="setItemProduct($event)"
               (searchTextChange)="productComboboxOutput.set($event); productTouched.set(true)"
-              [placeholderInput]="'producto'"
-              [valuesResource]="productsQuery.data() ?? []"
-              [loading]="productsQuery.isLoading()"
+              [placeholderInput]="'producto'" [valuesResource]="productsQuery.data() ?? []" [loading]="productsQuery.isLoading()"
               [isError]="!!itemForm.get('productId')?.errors && !!itemForm.get('productId')?.touched"
-              [selectedValue]="selectedProduct()"
-              [disable]="selectedIndexItem() !== null"></app-combobox-form-control>
+              [selectedValue]="selectedProduct()" [disable]="selectedIndexItem() !== null" />
             @if (itemForm.controls.productId.touched && itemForm.controls.productId.invalid) {
               <p class="text-error text-xs" role="alert">* Obligatorio: seleccione un producto.</p>
             }
           </fieldset>
-        </div>
-
-        <div
-          [class.md:col-span-3]="!!selectedWarehouse() || selectedIndexItem() !== null"
-          [class.md:col-span-6]="!selectedWarehouse() && selectedIndexItem() === null">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Bodega</legend>            <app-combobox-form-control
-              (click)="warehouseTouched.set(true)"
-              (valuesOutput)="setWarehouse($event)"
-              (searchTextChange)="warehouseComboboxOutput.set($event); warehouseTouched.set(true)"
-              [placeholderInput]="'bodega'"
-              [valuesResource]="warehousesQuery.data() ?? []"
-              [loading]="warehousesQuery.isLoading()"
-              [selectedValue]="selectedWarehouse()"
-              [isError]="itemForm.controls.zoneId.touched && needsItemWarehouse()"
-              [disable]="!selectedProduct()"></app-combobox-form-control>
-            @if (itemForm.controls.zoneId.touched && needsItemWarehouse()) {
-              <p class="text-error text-xs" role="alert">* Obligatorio: seleccione una bodega para elegir la zona.</p>
-            }
-          </fieldset>
-        </div>
-
-        @if (selectedWarehouse() || selectedIndexItem() !== null) {
-          <div class="md:col-span-3">
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">Zona (obligatoria)</legend>
-              <app-combobox-form-control
-                (click)="zoneTouched.set(true)"
-                (valuesOutput)="setItemZone($event)"
-                namePrefixSeparator=" / "
-                (searchTextChange)="zoneComboboxOutput.set($event); zoneTouched.set(true)"
-                [placeholderInput]="'zona'"
-                [valuesResource]="zonesQuery.data() ?? []"
-                [loading]="zonesQuery.isLoading()"
-                [isError]="!!itemForm.get('zoneId')?.errors && !!itemForm.get('zoneId')?.touched"
-                [selectedValue]="selectedZone()"
-                [disable]="!selectedProduct()"></app-combobox-form-control>
-              <app-form-error-label [control]="itemForm.controls.zoneId" requiredText="* Obligatorio: seleccione la zona de salida."></app-form-error-label>
-            </fieldset>
-          </div>
-        }
-
-        <div class="md:col-span-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Cantidad</legend>
-            <input class="input w-full" [class.input-error]="itemForm.controls.quantity.touched && itemForm.controls.quantity.invalid" placeholder="1" formControlName="quantity"
-              type="number" inputmode="numeric" min="1" />
-          </fieldset>
-          <app-form-error-label [control]="itemForm.get('quantity')!"></app-form-error-label>
-        </div>
-
-         <div class="md:col-span-2">
-           <fieldset class="fieldset">
-             <legend class="fieldset-legend">Precio de venta (opcional)</legend>
-             <input class="input w-full" [class.input-error]="itemForm.controls.unitPrice.touched && itemForm.controls.unitPrice.invalid" type="number" min="0" step="0.01"
-               placeholder="Sin asignar" formControlName="unitPrice" />
-             <app-form-error-label [control]="itemForm.get('unitPrice')!"></app-form-error-label>
-           </fieldset>
-         </div>
-
-         <div class="md:col-span-2">
-           <fieldset class="fieldset">
-             <legend class="fieldset-legend">Tipo descuento</legend>
-            <select class="select w-full" formControlName="discountType">
-              <option [ngValue]="null">Ninguno</option>
-              <option [ngValue]="'USD'">$</option>
-              <option [ngValue]="'PERCENT'">%</option>
-            </select>
-          </fieldset>
-        </div>
-
-        <div class="md:col-span-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Descuento $</legend>
-            <input class="input w-full" type="number" min="0" step="0.01"
-              placeholder="0.00" formControlName="discountValue" />
-          </fieldset>
-        </div>
-      </div>
-
-      @if (selectedProduct()) {
-        <div class="stats stats-vertical sm:stats-horizontal shadow mt-3 md:col-span-6">
-          <div class="stat py-2">
-            <div class="stat-title">Precio estimado</div>
-            <div class="stat-value text-lg">{{ priceEstimate() | currency }}</div>
-          </div>
-          @if (productStock(); as stock) {
-            <div class="stat py-2">
-              <div class="stat-title">En esta zona</div>
-              <div class="stat-value text-lg">{{ zoneAvailable() ?? 0 }}</div>
+          @if (selectedProduct(); as product) {
+            <div class="rounded-box border border-base-300 bg-base-100 p-4 mt-4">
+              <span class="icon-[tabler--package] text-3xl text-primary mb-2" aria-hidden="true"></span>
+              <p class="font-semibold text-lg break-words">{{ product.name }}</p>
+              <p class="text-xs text-base-content/60 mt-1">Producto seleccionado</p>
             </div>
-            <div class="stat py-2">
-              <div class="stat-title">Stock total</div>
-              <div class="stat-value text-lg">{{ stock.total }}</div>
-            </div>
+            <dl class="rounded-box border border-base-300 bg-base-100 p-4 mt-4 space-y-3 text-sm">
+              <div class="flex justify-between gap-3"><dt class="text-base-content/60">Precio estimado</dt><dd class="font-semibold">{{ priceEstimate() | currency }}</dd></div>
+              @if (productStock(); as stock) {
+                <div class="flex justify-between gap-3"><dt class="text-base-content/60">En esta zona</dt><dd class="font-semibold">{{ zoneAvailable() ?? 0 }}</dd></div>
+                <div class="flex justify-between gap-3"><dt class="text-base-content/60">Stock total</dt><dd class="font-semibold">{{ stock.total }}</dd></div>
+              }
+            </dl>
           }
         </div>
-      }
-      <div class="flex justify-between items-center gap-2 mt-4">
-        <button class="btn" type="button" (click)="closeItemModal()">Cerrar</button>
-        <button type="submit" class="btn btn-success">
-          Guardar
-        </button>
-      </div>
+        <div productFields class="space-y-5">
+          @if (itemForm.touched && itemValidationMessages().length > 0) {
+            <div class="alert alert-error" role="alert"><div><p class="font-semibold">Revise los datos del producto</p>
+              <ul class="list-disc pl-5">@for (message of itemValidationMessages(); track message) { <li>{{ message }}</li> }</ul>
+            </div></div>
+          }
+          <section>
+            <h3 class="font-semibold text-sm flex items-center gap-2 mb-3"><span class="icon-[tabler--map-pin] text-lg" aria-hidden="true"></span>Zona de salida</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <fieldset class="fieldset p-1" [class.md:col-span-2]="!selectedWarehouse() && selectedIndexItem() === null">
+                <legend class="fieldset-legend">Bodega</legend>
+                <app-combobox-form-control (click)="warehouseTouched.set(true)" (valuesOutput)="setWarehouse($event)"
+                  (searchTextChange)="warehouseComboboxOutput.set($event); warehouseTouched.set(true)" [placeholderInput]="'bodega'"
+                  [valuesResource]="warehousesQuery.data() ?? []" [loading]="warehousesQuery.isLoading()" [selectedValue]="selectedWarehouse()"
+                  [isError]="itemForm.controls.zoneId.touched && needsItemWarehouse()" [disable]="!selectedProduct()" />
+                @if (itemForm.controls.zoneId.touched && needsItemWarehouse()) {
+                  <p class="text-error text-xs" role="alert">* Obligatorio: seleccione una bodega para elegir la zona.</p>
+                }
+              </fieldset>
+              @if (selectedWarehouse() || selectedIndexItem() !== null) {
+                <fieldset class="fieldset p-1"><legend class="fieldset-legend">Zona (obligatoria)</legend>
+                  <app-combobox-form-control (click)="zoneTouched.set(true)" (valuesOutput)="setItemZone($event)" namePrefixSeparator=" / "
+                    (searchTextChange)="zoneComboboxOutput.set($event); zoneTouched.set(true)" [placeholderInput]="'zona'"
+                    [valuesResource]="zonesQuery.data() ?? []" [loading]="zonesQuery.isLoading()"
+                    [isError]="!!itemForm.get('zoneId')?.errors && !!itemForm.get('zoneId')?.touched"
+                    [selectedValue]="selectedZone()" [disable]="!selectedProduct()" />
+                  <app-form-error-label [control]="itemForm.controls.zoneId" requiredText="* Obligatorio: seleccione la zona de salida." />
+                </fieldset>
+              }
+            </div>
+          </section>
+          <section class="border-t border-base-300 pt-4">
+            <h3 class="font-semibold text-sm mb-3">Cantidad e importes</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Cantidad</legend>
+                <input class="input w-full" [class.input-error]="itemForm.controls.quantity.touched && itemForm.controls.quantity.invalid" placeholder="1" formControlName="quantity" type="number" inputmode="numeric" min="1" aria-label="Cantidad" />
+                <app-form-error-label [control]="itemForm.controls.quantity" />
+              </fieldset>
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Precio de venta (opcional)</legend>
+                <input class="input w-full" [class.input-error]="itemForm.controls.unitPrice.touched && itemForm.controls.unitPrice.invalid" type="number" min="0" step="0.01" placeholder="Sin asignar" formControlName="unitPrice" aria-label="Precio de venta" />
+                <app-form-error-label [control]="itemForm.controls.unitPrice" />
+              </fieldset>
+            </div>
+          </section>
+          <section class="border-t border-base-300 pt-4">
+            <h3 class="font-semibold text-sm mb-3">Descuento</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Tipo de descuento</legend>
+                <select class="select w-full" formControlName="discountType" aria-label="Tipo de descuento"><option [ngValue]="null">Ninguno</option><option [ngValue]="'USD'">$</option><option [ngValue]="'PERCENT'">%</option></select>
+              </fieldset>
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Valor del descuento</legend>
+                <input class="input w-full" type="number" min="0" step="0.01" placeholder="0.00" formControlName="discountValue" aria-label="Valor del descuento" />
+              </fieldset>
+            </div>
+          </section>
+        </div>
+        <div productActions class="flex flex-wrap justify-end gap-3">
+          <button class="btn btn-outline" type="button" (click)="closeItemModal()">Cerrar</button>
+          <button type="submit" class="btn btn-success"><span class="icon-[tabler--check] text-lg" aria-hidden="true"></span>Guardar</button>
+        </div>
+      </app-product-entry-layout>
     </form>
   </div>
-
   <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="closeItemModal()">Cerrar</button></form>
 </dialog>
 

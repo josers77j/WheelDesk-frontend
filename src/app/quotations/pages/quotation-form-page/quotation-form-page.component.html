@@ -140,11 +140,49 @@
 <app-review-checklist [items]="reviewItems()" />
 </section></aside></div>
 }
-<dialog #itemDialog class="modal"><div class="modal-box w-11/12 max-w-5xl"><h3 class="text-lg font-bold mb-4">{{ editingLine() === null ? 'Agregar producto' : 'Modificar producto' }}</h3><form [formGroup]="itemForm" (ngSubmit)="addItem()">
- <app-combobox-form-control [valuesResource]="productQuery.data() ?? []" [selectedValue]="selectedProduct()" placeholderInput="Buscar producto" [loading]="productQuery.isFetching()" (click)="productTouched.set(true)" (searchTextChange)="productSearch.set($event); productTouched.set(true)" (valuesOutput)="selectedProduct.set($event)" />
- <div class="grid grid-cols-1 md:grid-cols-6 gap-3 mt-4"><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Cantidad</legend><input class="input w-full" type="number" min="1" step="1" formControlName="quantity" /></fieldset><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Precio de venta</legend><input class="input w-full" type="number" min="0" step="0.01" formControlName="unitPrice" /></fieldset><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Tipo descuento</legend><select class="select w-full" formControlName="discountType"><option [ngValue]="null">Ninguno</option><option [ngValue]="discountTypes.USD">$</option><option [ngValue]="discountTypes.PERCENT">%</option></select></fieldset><fieldset class="fieldset md:col-span-2"><legend class="fieldset-legend">Descuento $</legend><input class="input w-full" type="number" min="0" step="0.01" placeholder="0.00" formControlName="discountValue" /></fieldset></div>
- <div class="modal-action"><button class="btn" type="button" (click)="itemDialog.close()">Cancelar</button><button class="btn btn-success" type="submit">{{ editingLine() === null ? 'Agregar' : 'Guardar' }}</button></div>
-</form></div>
+<dialog #itemDialog class="modal" aria-label="Producto de la cotización">
+  <div class="modal-box w-11/12 max-w-5xl max-h-none p-0 border border-base-300 overflow-hidden">
+    <form [formGroup]="itemForm" (ngSubmit)="addItem()">
+      <app-product-entry-layout [title]="editingLine() === null ? 'Agregar producto' : 'Modificar producto'"
+        description="Producto e importes; sin afectar las existencias."
+        footerNote="Cotizar no reserva ni descuenta existencias." (closed)="itemDialog.close()">
+        <div productSelection>
+          <fieldset class="fieldset p-1"><legend class="fieldset-legend">Producto</legend>
+            <app-combobox-form-control [valuesResource]="productQuery.data() ?? []" [selectedValue]="selectedProduct()"
+              placeholderInput="Buscar producto" [loading]="productQuery.isFetching()" (click)="productTouched.set(true)"
+              (searchTextChange)="productSearch.set($event); productTouched.set(true)" (valuesOutput)="selectedProduct.set($event)" />
+          </fieldset>
+          @if (selectedProduct(); as product) {
+            <div class="rounded-box border border-base-300 bg-base-100 p-4 mt-4">
+              <span class="icon-[tabler--package] text-3xl text-primary mb-2" aria-hidden="true"></span>
+              <p class="font-semibold text-lg break-words">{{ product.name }}</p>
+              <p class="text-xs text-base-content/60 mt-1">Producto seleccionado</p>
+            </div>
+          }
+        </div>
+        <div productFields class="space-y-5">
+          <section>
+            <h3 class="font-semibold text-sm mb-3">Cantidad e importes</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Cantidad</legend><input class="input w-full" type="number" min="1" step="1" formControlName="quantity" aria-label="Cantidad" /></fieldset>
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Precio de venta</legend><input class="input w-full" type="number" min="0" step="0.01" formControlName="unitPrice" aria-label="Precio de venta" /></fieldset>
+            </div>
+          </section>
+          <section class="border-t border-base-300 pt-4">
+            <h3 class="font-semibold text-sm mb-3">Descuento</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Tipo de descuento</legend><select class="select w-full" formControlName="discountType" aria-label="Tipo de descuento"><option [ngValue]="null">Ninguno</option><option [ngValue]="discountTypes.USD">$</option><option [ngValue]="discountTypes.PERCENT">%</option></select></fieldset>
+              <fieldset class="fieldset p-1"><legend class="fieldset-legend">Valor del descuento</legend><input class="input w-full" type="number" min="0" step="0.01" placeholder="0.00" formControlName="discountValue" aria-label="Valor del descuento" /></fieldset>
+            </div>
+          </section>
+        </div>
+        <div productActions class="flex flex-wrap justify-end gap-3">
+          <button class="btn btn-outline" type="button" (click)="itemDialog.close()">Cancelar</button>
+          <button class="btn btn-success" type="submit"><span class="icon-[tabler--check] text-lg" aria-hidden="true"></span>{{ editingLine() === null ? 'Agregar' : 'Guardar' }}</button>
+        </div>
+      </app-product-entry-layout>
+    </form>
+  </div>
   <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="itemDialog.close()">Cerrar</button></form>
 </dialog>
 <app-customer-form-modal (saved)="customerSaved($event)" />

@@ -240,66 +240,57 @@
   </div>
 }
 
-<dialog #productModal class="modal">
-
-  <div class="modal-box w-11/12 max-w-5xl">
-    <h3 class="text-lg font-bold">Agregar productos</h3>
-    <p class="py-4">Selecciona el producto y la cantidad a transferir</p>
-
-  <form [formGroup]="productForm" (ngSubmit)="onSaveProduct()">
-      <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 md:grid-cols-6">
-        <div class="md:col-span-6">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Producto</legend>
-            <app-combobox-form-control
-              (click)="productTouched.set(true)"
-              (valuesOutput)="setProduct($event)"
-              (searchTextChange)="productComboboxOutput.set($event); productTouched.set(true)"
-              [placeholderInput]="'producto'"
-              [valuesResource]="productsQuery.data() ?? []"
-              [loading]="productsQuery.isLoading()"
-              [isError]="!!productForm.get('productId')?.errors"
-              [selectedValue]="selectedProduct()"
-              [disable]="!selectedFromZone() || selectedIndexProduct() !== null"></app-combobox-form-control>
-            <p class="label">Opcional</p>
+<dialog #productModal class="modal" aria-label="Producto de la transferencia">
+  <div class="modal-box w-11/12 max-w-5xl max-h-none p-0 border border-base-300 overflow-hidden">
+    <form [formGroup]="productForm" (ngSubmit)="onSaveProduct()">
+      <app-product-entry-layout [title]="selectedIndexProduct() === null ? 'Agregar producto' : 'Modificar producto'"
+        description="Producto y cantidad para el traslado entre zonas."
+        footerNote="La cantidad se agrega al detalle del traslado." (closed)="closeModal()">
+        <div productSelection>
+          <fieldset class="fieldset p-1"><legend class="fieldset-legend">Producto</legend>
+            <app-combobox-form-control (click)="productTouched.set(true)" (valuesOutput)="setProduct($event)"
+              (searchTextChange)="productComboboxOutput.set($event); productTouched.set(true)" [placeholderInput]="'producto'"
+              [valuesResource]="productsQuery.data() ?? []" [loading]="productsQuery.isLoading()"
+              [isError]="!!productForm.get('productId')?.errors" [selectedValue]="selectedProduct()"
+              [disable]="!selectedFromZone() || selectedIndexProduct() !== null" />
+            <app-form-error-label [control]="productForm.controls.productId" />
           </fieldset>
-          <app-form-error-label [control]="productForm.get('productId')!"></app-form-error-label>
+          @if (selectedProduct(); as product) {
+            <div class="rounded-box border border-base-300 bg-base-100 p-4 mt-4">
+              <span class="icon-[tabler--package] text-3xl text-primary mb-2" aria-hidden="true"></span>
+              <p class="font-semibold text-lg break-words">{{ product.name }}</p>
+              <p class="text-xs text-base-content/60 mt-1">Producto seleccionado</p>
+            </div>
+            @if (product.zoneStock !== undefined && product.zoneStock !== null) {
+              <dl class="rounded-box border border-base-300 bg-base-100 p-4 mt-4 text-sm">
+                <dt class="text-base-content/60">Disponible en origen</dt><dd class="text-lg font-semibold mt-1">{{ product.zoneStock }} unidades</dd>
+              </dl>
+            }
+          }
         </div>
-
-        <div class="md:col-span-3">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Cantidad</legend>
-            <input
-              class="input w-full"
-              placeholder="4"
-              formControlName="quantity"
-              type="number"
-              inputmode="numeric"
-             />
-          </fieldset>
-           <app-form-error-label [control]="productForm.get('quantity')!"></app-form-error-label>
-           @if (selectedProduct()?.zoneStock !== undefined && selectedProduct()?.zoneStock !== null) {
-             <p class="text-xs opacity-70 mt-1">
-               Stock disponible en origen: {{ selectedProduct()?.zoneStock }}
-             </p>
-           }
-         </div>
-
-      </div>
-    <div class="flex justify-end mt-4">
-       <button class="btn btn-success" [disabled]="!productForm.dirty || productForm.invalid">
-        Guardar
-      </button>
-    </div>
-  </form>
-
-  <div class="modal-action">
-    <form method="dialog">
-      <button class="btn" (click)="closeModal()" type="button">Cerrar</button>
+        <div productFields class="space-y-5">
+          <section class="rounded-box border border-base-300 bg-base-200/40 p-4">
+            <h3 class="font-semibold text-sm flex items-center gap-2 mb-3"><span class="icon-[tabler--map-pin] text-lg" aria-hidden="true"></span>Ubicaciones del traslado</h3>
+            <dl class="space-y-3 text-sm">
+              <div><dt class="text-base-content/60">Origen</dt><dd class="font-medium break-words">{{ selectedFromWarehouse()?.name || 'Sin bodega' }} / {{ selectedFromZone()?.name || 'Sin zona' }}</dd></div>
+              <div><dt class="text-base-content/60">Destino</dt><dd class="font-medium break-words">{{ selectedToWarehouse()?.name || 'Sin bodega' }} / {{ selectedToZone()?.name || 'Sin zona' }}</dd></div>
+            </dl>
+          </section>
+          <section>
+            <h3 class="font-semibold text-sm mb-3">Cantidad a transferir</h3>
+            <fieldset class="fieldset p-1"><legend class="fieldset-legend">Cantidad</legend>
+              <input class="input w-full" placeholder="4" formControlName="quantity" type="number" inputmode="numeric" aria-label="Cantidad" />
+              <app-form-error-label [control]="productForm.controls.quantity" />
+            </fieldset>
+          </section>
+        </div>
+        <div productActions class="flex flex-wrap justify-end gap-3">
+          <button class="btn btn-outline" type="button" (click)="closeModal()">Cerrar</button>
+          <button type="submit" class="btn btn-success" [disabled]="!productForm.dirty || productForm.invalid"><span class="icon-[tabler--check] text-lg" aria-hidden="true"></span>Guardar</button>
+        </div>
+      </app-product-entry-layout>
     </form>
   </div>
-  </div>
-
   <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar al tocar fuera" type="button" (click)="closeModal()">Cerrar</button></form>
 </dialog>
 <app-alert />
