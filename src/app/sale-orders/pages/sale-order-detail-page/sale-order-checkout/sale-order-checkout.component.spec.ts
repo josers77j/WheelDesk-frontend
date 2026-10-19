@@ -1,7 +1,7 @@
 import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { of, Subject } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
@@ -31,7 +31,7 @@ describe('Checkout quotation item regressions', (): void => {
     alerts = { showError: jasmine.createSpy('showError') };
     TestBed.configureTestingModule({ providers: [
       provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-      { provide: Location, useValue: {} }, { provide: Router, useValue: {} }, { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: new Map() } } },
+      { provide: Location, useValue: {} }, { provide: Router, useValue: {} }, { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
       { provide: QuotationService, useValue: {} }, { provide: SaleOrderService, useValue: {} },
       { provide: CatalogService, useValue: { getCatalog: (): ReturnType<CatalogService['getCatalog']> => of([]) } },
       { provide: CustomerService, useValue: {} }, { provide: ZoneService, useValue: {} }, { provide: WarehouseService, useValue: {} },
@@ -41,6 +41,35 @@ describe('Checkout quotation item regressions', (): void => {
     component = TestBed.runInInjectionContext(() => new SaleOrderCheckoutComponent(TestBed.inject(Location)));
     const fb = TestBed.inject(FormBuilder);
     for (const id of [1, 2]) component.itemsArray.push(fb.group({ productId: id, name: `Item ${id}`, quantity: 2, zoneId: null, zoneName: '', unitPrice: 17, unitPriceEstimate: '99', discountType: DiscountType.USD, discountValue: 3 }));
+  });
+  it('clears the sale draft, reactive arrays, attachments and quotation source without navigating', async (): Promise<void> => {
+    await component.ngOnInit();
+    component.checkoutForm.controls.customerId.setValue(9);
+    component.selectedCustomer.set({id: 9, name: 'Client'});
+    component.draftService.draft.update(draft => ({...draft, quotationId: 4}));
+    const requestId = component.draftService.draft().requestId;
+    component.attachmentFiles.set([new File(['{}'], 'invoice.json')]);
+    component.clearDraft();
+    expect(component.itemsArray.length).toBe(0);
+    expect(component.paymentsArray.length).toBe(0);
+    expect(component.itemsSnapshot()).toEqual([]);
+    expect(component.paymentsSnapshot()).toEqual([]);
+    expect(component.checkoutForm.controls.customerId.value).toBeNull();
+    expect(component.selectedCustomer()).toBeNull();
+    expect(component.attachmentFiles()).toEqual([]);
+    expect(component.quotationSource()).toBeNull();
+    expect(component.draftService.draft().requestId).not.toBe(requestId);
+    expect(component.checkoutForm.pristine).toBeTrue();
+    component.onAddPayment();
+    component.paymentsArray.at(0).get('amount')?.setValue(12);
+    expect(component.paymentsSnapshot()[0].amount).toBe(12);
+    component.ngOnDestroy();
+    component.draftService.reset();
+  });
+  it('does not clear a sale while its request is pending', (): void => {
+    component.isLoading.set(true);
+    component.clearDraft();
+    expect(component.itemsArray.length).toBe(2);
   });
   it('keeps the sidebar product status pending until every sale line has a zone', (): void => {
     expect(component.reviewItems().find(item => item.label === 'Productos y cantidades')?.complete).toBeFalse();

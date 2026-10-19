@@ -1,0 +1,19 @@
+@let document = quotation();
+<div class="space-y-5">
+ <section class="rounded-box border border-base-300 p-4">
+  <h3 class="font-semibold mb-3">Datos de la cotización</h3>
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+   <div class="min-w-0"><dt class="text-base-content/60">Cliente</dt><dd class="font-medium break-words">{{ document.customerName || document.customer?.name || 'Sin cliente' }}</dd></div>
+   <div><dt class="text-base-content/60">Fecha</dt><dd>{{ document.createdAt | date: 'dd/MM/yyyy' }}</dd></div>
+   <div class="sm:col-span-2 min-w-0"><dt class="text-base-content/60">Dirección</dt><dd class="whitespace-pre-wrap break-words">{{ document.customerAddress || 'No registrada' }}</dd></div>
+  </dl>
+ </section>
+ <section class="rounded-box border border-base-300 overflow-hidden">
+  <h3 class="font-semibold p-4">Productos</h3>
+  <div class="overflow-x-auto"><table class="table table-zebra"><thead><tr><th>Producto</th><th class="text-right">Cantidad</th><th class="text-right">Precio unitario</th><th class="text-right">Subtotal</th><th class="text-right">Descuento</th><th class="text-right">Impuesto</th></tr></thead>
+   <tbody>@for (item of document.details; track item.id) { <tr><td class="min-w-40">{{ item.productName }}</td><td class="text-right">{{ item.quantity }}</td><td class="text-right">{{ item.unitPrice | currency: 'USD' }}</td><td class="text-right">{{ item.subtotal | currency: 'USD' }}</td><td class="text-right">{{ item.discountAmount | currency: 'USD' }}</td><td class="text-right">{{ item.taxAmount | currency: 'USD' }}</td></tr> }</tbody>
+  </table></div>
+ </section>
+ <section class="rounded-box border border-base-300 p-4"><dl class="grid grid-cols-2 gap-3 sm:max-w-sm sm:ml-auto"><dt>Subtotal</dt><dd class="text-right">{{ document.subtotal | currency: 'USD' }}</dd><dt>Descuento global</dt><dd class="text-right">{{ document.globalDiscount | currency: 'USD' }}</dd><dt>IVA</dt><dd class="text-right">{{ document.iva | currency: 'USD' }}</dd><dt class="font-bold text-lg">Total</dt><dd class="text-right font-bold text-lg">{{ document.total | currency: 'USD' }}</dd></dl></section>
+ @if (document.notes) { <section class="rounded-box border border-base-300 p-4"><h3 class="font-semibold mb-2">Observaciones</h3><p class="whitespace-pre-wrap break-words">{{ document.notes }}</p></section> }
+</div>

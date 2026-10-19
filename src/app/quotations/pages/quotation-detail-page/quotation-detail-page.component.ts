@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { QuotationPreviewComponent } from '../../components/quotation-preview/quotation-preview.component';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -10,7 +10,7 @@ import { AlertComponent } from '../../../shared/components/alert/alert.component
 
 @Component({
   selector: 'app-quotation-detail-page',
-  imports: [CurrencyPipe, DatePipe, RouterLink, AlertComponent, QuotationDocumentActionsComponent],
+  imports: [QuotationPreviewComponent, RouterLink, AlertComponent, QuotationDocumentActionsComponent],
   templateUrl: './quotation-detail-page.component.html',
 })
 export class QuotationDetailPageComponent {

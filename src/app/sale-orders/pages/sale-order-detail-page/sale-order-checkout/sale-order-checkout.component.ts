@@ -108,6 +108,8 @@ export class SaleOrderCheckoutComponent implements OnInit, OnDestroy {
   router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
   private readonly quotationService = inject(QuotationService);
+  readonly quotationBannerDismissed = signal(false);
+  readonly clearDraftDialog = viewChild<ElementRef<HTMLDialogElement>>('clearDraftDialog');
   readonly quotationSource = computed(() => this.draftService.draft().quotationId);
   saleOrderService = inject(SaleOrderService);
   catalogService = inject(CatalogService);
@@ -1365,6 +1367,39 @@ export class SaleOrderCheckoutComponent implements OnInit, OnDestroy {
 
     this.isLoading.set(true);
     this.mutationCheckout.mutate(payload);
+  }
+
+  requestClearDraft(): void {
+    if (!this.isLoading() && this.savedSaleId() === null) this.clearDraftDialog()?.nativeElement.showModal();
+  }
+
+  clearDraft(): void {
+    if (this.isLoading() || this.savedSaleId() !== null) return;
+    this.clearDraftDialog()?.nativeElement.close();
+    this.itemsArray.clear({ emitEvent: false });
+    this.paymentsArray.clear({ emitEvent: false });
+    this.checkoutForm.reset({ customerId: null, discountType: null, discountValue: null, paymentTermId: null }, { emitEvent: false });
+    this.draftService.reset();
+    this.documentType.set(CheckoutDocumentType.INVOICE);
+    this.documentTypeId.set(this.invoiceEntry()?.id ?? null);
+    this.checkoutForm.controls.customerId.clearValidators();
+    this.checkoutForm.controls.customerId.updateValueAndValidity({ emitEvent: false });
+    this.selectedCustomer.set(null);
+    this.newCustomer.set(null);
+    this.customerMode.set('EXISTING');
+    this.customerComboboxOutput.set('');
+    this.customerTouched.set(false);
+    this.selectedIndexItem.set(null);
+    this.resetItemForm();
+    this.attachmentFiles.set([]);
+    this.closeAttachmentPreview();
+    this.pdfViewer()?.close();
+    this.itemsSnapshot.set([]);
+    this.paymentsSnapshot.set([]);
+    this.quotationBannerDismissed.set(false);
+    this.checkoutForm.markAsPristine();
+    this.checkoutForm.markAsUntouched();
+    this.cdr?.markForCheck();
   }
 
   onCancel() {

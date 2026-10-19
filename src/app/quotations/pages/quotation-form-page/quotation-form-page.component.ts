@@ -1,3 +1,4 @@
+import { ReviewChecklistComponent, ReviewItem } from '../../../shared/components/review-checklist/review-checklist.component';
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -20,7 +21,7 @@ import { CheckoutDocumentType, DiscountType } from '../../../sale-orders/interfa
 import { QuotationLineInput, QuotationWrite } from '../../interfaces/quotation.interface';
 import { QuotationService } from '../../services/quotation.service';
 
-@Component({ selector: 'app-quotation-form-page', imports: [CurrencyPipe, RouterLink, ReactiveFormsModule, ComboboxFormControlComponent, CustomerFormModalComponent, ConfirmActionModalComponent, AlertComponent, QueryErrorComponent], templateUrl: './quotation-form-page.component.html' })
+@Component({ selector: 'app-quotation-form-page', imports: [ReviewChecklistComponent, CurrencyPipe, RouterLink, ReactiveFormsModule, ComboboxFormControlComponent, CustomerFormModalComponent, ConfirmActionModalComponent, AlertComponent, QueryErrorComponent], templateUrl: './quotation-form-page.component.html' })
 export class QuotationFormPageComponent implements OnInit {
  private readonly route = inject(ActivatedRoute); private readonly router = inject(Router); private readonly service = inject(QuotationService); private readonly customers = inject(CustomerService); private readonly products = inject(ProductService); private readonly alerts = inject(AlertService); private readonly cache = inject(QueryClient); private readonly fb = inject(FormBuilder);
  readonly id = Number(this.route.snapshot.paramMap.get('id') ?? 0);
@@ -29,7 +30,7 @@ export class QuotationFormPageComponent implements OnInit {
  readonly mode = signal<'EXISTING' | 'NEW'>('EXISTING');
  readonly customerValue = signal<ValueParams | null>(null); readonly customer = signal<Customer | null>(null);
  readonly customerSearch = signal(''); readonly productSearch = signal(''); readonly customerTouched = signal(false); readonly productTouched = signal(false);
- readonly selectedProduct = signal<ValueParams | null>(null); readonly editingLine = signal<number | null>(null); readonly selectedLine = signal<number | null>(null);
+ readonly selectedProduct = signal<ValueParams | null>(null); readonly editingLine = signal<number | null>(null);
  readonly lines = signal<QuotationLineInput[]>([]);
  readonly discountTypes = DiscountType;
  readonly missingFields = customerMissingFields;
@@ -44,6 +45,16 @@ export class QuotationFormPageComponent implements OnInit {
  private readonly moneyPayload = computed((): QuotationWrite => ({ ...this.payload(), customerId: null, customerName: null, customerAddress: null, notes: null }));
  private readonly previewInput = toSignal(toObservable(this.moneyPayload).pipe(debounceTime(300)), { initialValue: this.moneyPayload() });
  readonly preview = injectQuery(() => ({ queryKey: ['quotation-preview', this.previewInput()], queryFn: () => firstValueFrom(this.service.preview(this.previewInput())), enabled: this.previewInput().details.length > 0 && !this.loading(), retry: false, staleTime: 300000 }));
+ readonly attemptedSave = signal(false);
+ readonly reviewItems = computed((): ReviewItem[] => {
+  const header = this.headerValues();
+  return [
+   { label: 'Productos y cantidades', complete: this.lines().length > 0, touched: this.attemptedSave() },
+   { label: 'Importes calculados', complete: this.previewReady(), touched: this.attemptedSave() },
+   { label: 'Cliente (opcional)', complete: this.customerResolved() && (!!this.customerValue() || !!header.customerName?.trim()), touched: false, optional: true },
+   { label: 'Observaciones (opcional)', complete: !!header.notes?.trim(), touched: false, optional: true },
+  ];
+ });
  private customerRequest = 0;
  readonly customerResolved = computed(() => this.customerValue() === null || (this.customer() !== null && this.customer()?.id === this.customerValue()?.id));
  readonly previewReady = computed(() => this.previewCurrent() && this.preview.isSuccess() && !this.preview.isFetching());
@@ -97,10 +108,12 @@ export class QuotationFormPageComponent implements OnInit {
   if ((value.discountType === null) !== (value.discountValue === null) || (value.discountType === DiscountType.PERCENT && (value.discountValue ?? 0) > 100)) { this.alerts.showError('Completa el tipo y valor de descuento; el porcentaje no puede superar 100%'); return; }
   if (this.lines().some((line, i) => line.productId === product.id && i !== index)) { this.alerts.showError('El producto ya está agregado'); return; }
   const line: QuotationLineInput = { productId: product.id, productName: product.name, quantity: value.quantity, unitPrice: value.unitPrice, ...(value.discountType !== null && value.discountValue !== null ? { discountType: value.discountType, discountValue: value.discountValue } : {}) };
-  this.lines.update((lines) => index === null ? [...lines, line] : lines.map((previous, i) => i === index ? line : previous)); this.selectedLine.set(null); this.itemDialog()?.nativeElement.close();
+  this.lines.update((lines) => index === null ? [...lines, line] : lines.map((previous, i) => i === index ? line : previous)); this.itemDialog()?.nativeElement.close();
  }
- removeItem(index: number): void { this.lines.update((lines) => lines.filter((_, i) => i !== index)); this.selectedLine.set(null); }
+ removeItem(index: number): void { this.lines.update((lines) => lines.filter((_, i) => i !== index)); }
  requestSave(): void {
+  this.attemptedSave.set(true);
+  this.header.markAllAsTouched();
   const h = this.header.getRawValue();
   if ((h.discountType === null) !== (h.discountValue === null)) { this.alerts.showError('Completa el tipo y valor del descuento global'); return; }
   if (this.header.invalid || !this.canSave()) return;

@@ -1,3 +1,5 @@
+import { ElementRef, viewChild } from '@angular/core';
+import { QuotationPreviewComponent } from '../../components/quotation-preview/quotation-preview.component';
 import { FilterPanelComponent } from '../../../shared/components/filter-panel/filter-panel.component';
 import { listSelectionNumber } from '../../../shared/utils/list-selection';
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
@@ -21,7 +23,7 @@ import { QuotationService } from '../../services/quotation.service';
 import { QuotationTableComponent } from '../../components/quotation-table/quotation-table.component';
 import { QuotationDocumentActionsComponent } from '../../components/quotation-document-actions/quotation-document-actions.component';
 @Component({ selector: 'app-quotations-page', imports: [
-    FilterPanelComponent,RouterLink, ReactiveFormsModule, PaginationComponent, TitleComponent, LimitComponent, DateRangeComponent, SkeletonComponent, QueryErrorComponent, ComboboxFormControlComponent, AlertComponent, QuotationTableComponent, QuotationDocumentActionsComponent], templateUrl: './quotations-page.component.html' })
+    QuotationPreviewComponent, FilterPanelComponent,RouterLink, ReactiveFormsModule, PaginationComponent, TitleComponent, LimitComponent, DateRangeComponent, SkeletonComponent, QueryErrorComponent, ComboboxFormControlComponent, AlertComponent, QuotationTableComponent, QuotationDocumentActionsComponent], templateUrl: './quotations-page.component.html' })
 export class QuotationsPageComponent {
  private readonly route = inject(ActivatedRoute); private readonly router = inject(Router); private readonly service = inject(QuotationService); private readonly customers = inject(CustomerService); private readonly alerts = inject(AlertService);
  private readonly params = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
@@ -34,10 +36,15 @@ export class QuotationsPageComponent {
  readonly customerQuery = injectQuery(() => ({ queryKey: ['quotation-filter-customers', this.customerSearch()], queryFn: () => firstValueFrom(this.customers.getCustomers(1, 10, this.customerSearch())), enabled: this.customerTouched() && this.isOpen(), staleTime: 300000 }));
  readonly customerOptions = computed(() => (this.customerQuery.data()?.data ?? []).map((c): ValueParams => ({ id: c.id, name: c.name })));
  readonly quotations = injectQuery(() => ({ queryKey: ['quotations', this.page(), this.limit(), this.applied()], queryFn: () => firstValueFrom(this.service.getQuotations(this.page(), this.applied().documentNumber, this.limit(), this.applied())), staleTime: 300000 }));
- search(): void { if (this.quotations.isFetching()) return; const filters = this.filtersForm.getRawValue(); if (filters.from && filters.to && filters.from > filters.to) { this.alerts.showError('La fecha inicial no puede ser posterior a la final'); return; } this.navigate({ ...filters, customerId: this.selectedCustomer()?.id ?? null }); }
+ search(): void { if (this.quotations.isFetching()) return; const filters = this.filtersForm.getRawValue(); filters.documentNumber = filters.documentNumber.trim(); if (filters.from && filters.to && filters.from > filters.to) { this.alerts.showError('La fecha inicial no puede ser posterior a la final'); return; } this.navigate({ ...filters, customerId: this.selectedCustomer()?.id ?? null }); }
  reset(): void { if (this.quotations.isFetching()) return; this.selectedCustomer.set(null); this.filtersForm.reset(); this.navigate({ documentNumber: null, customerId: null, from: null, to: null }); }
  changeLimit(limit: number): void { this.navigate({ limit }); }
  chooseCustomer(value: ValueParams | null): void { this.selectedCustomer.set(value); }
  private navigate(filters: Record<string, string | number | null>): void { void this.router.navigate([], { relativeTo: this.route, queryParams: { ...filters, page: 1 }, queryParamsHandling: 'merge' }); }
+ readonly previewId = signal<number | null>(null);
+ readonly previewDialog = viewChild<ElementRef<HTMLDialogElement>>('previewDialog');
+ readonly preview = injectQuery(() => ({ queryKey: ['quotation', this.previewId()], queryFn: () => firstValueFrom(this.service.getQuotation(this.previewId() ?? 0)), enabled: this.previewId() !== null, staleTime: 300000 }));
+ openPreview(): void { this.previewId.set(this.selectedId()); this.previewDialog()?.nativeElement.showModal(); }
+ closePreview(): void { this.previewDialog()?.nativeElement.close(); this.previewId.set(null); }
  readonly selectedRowNumber = listSelectionNumber(this.selectedId, this.page, () => this.quotations.data());
 }
