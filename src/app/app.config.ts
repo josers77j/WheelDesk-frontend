@@ -25,6 +25,7 @@ import {
 import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import { authInterceptor } from './auth/interceptors/auth.interceptor';
+import { normalizeTextInterceptor } from './shared/interceptors/normalize-text.interceptor';
 import { apiEnvelopeInterceptor } from './shared/interceptors/api-envelope.interceptor';
 
 registerLocaleData(localeEs);
@@ -40,7 +41,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(
       withFetch(),
-      withInterceptors([apiEnvelopeInterceptor, authInterceptor]),
+      withInterceptors([normalizeTextInterceptor, apiEnvelopeInterceptor, authInterceptor]),
     ),
     provideTanStackQuery(
       new QueryClient({
