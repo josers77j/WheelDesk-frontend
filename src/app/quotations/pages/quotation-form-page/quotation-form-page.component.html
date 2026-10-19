@@ -2,6 +2,14 @@
 <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300"><h1 class="font-bold text-4xl">{{ editing ? 'Modificar cotización' : 'Nueva cotización' }}</h1></div>
 @if (loading()) { <p role="status">Cargando cotización…</p> } @else if (loadFailed()) { <div class="alert alert-error">No se pudo cargar la cotización. Vuelve al listado e intenta nuevamente.</div> } @else {
 <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem] gap-5 items-start"><div class="min-w-0">
+ <section class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300">
+  <h2 class="fieldset-legend">Tipo de documento</h2>
+  <div class="tabs tabs-box flex-wrap" role="tablist" aria-label="Tipo de documento">
+   <button type="button" role="tab" class="tab" [class.tab-active]="header.controls.saleType.value === documentTypes.INVOICE" [attr.aria-selected]="header.controls.saleType.value === documentTypes.INVOICE" [disabled]="saving()" (click)="header.controls.saleType.setValue(documentTypes.INVOICE)">Consumidor final</button>
+   <button type="button" role="tab" class="tab" [class.tab-active]="header.controls.saleType.value === documentTypes.TAX_CREDIT" [attr.aria-selected]="header.controls.saleType.value === documentTypes.TAX_CREDIT" [disabled]="saving()" (click)="header.controls.saleType.setValue(documentTypes.TAX_CREDIT)">Crédito fiscal</button>
+  </div>
+ </section>
+
 <div class="bg-base-100 rounded-box shadow-lg p-4 md:p-6 mb-5 border border-base-300" [formGroup]="header">
  <h2 class="fieldset-legend">Cliente (opcional)</h2>
  <div class="flex flex-wrap items-center gap-2 mb-4"><div class="tabs tabs-box" role="tablist" aria-label="Tipo de cliente">

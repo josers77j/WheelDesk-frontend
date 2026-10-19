@@ -24,6 +24,15 @@ describe('Quotation customer selection regressions', (): void => {
     ] });
     component = TestBed.runInInjectionContext(() => new QuotationFormPageComponent());
   });
+  it('includes the selected document type and invalidates amounts when it changes', fakeAsync((): void => {
+    component.lines.set([{ productId: 1, productName: 'A', quantity: 1, unitPrice: 10 }]);
+    TestBed.flushEffects(); tick(301); TestBed.flushEffects(); tick(); TestBed.flushEffects();
+    expect(component.payload().saleType).toBe(component.documentTypes.INVOICE);
+    expect(component.previewReady()).toBeTrue();
+    component.header.controls.saleType.setValue(component.documentTypes.TAX_CREDIT);
+    expect(component.payload().saleType).toBe(component.documentTypes.TAX_CREDIT);
+    expect(component.previewCurrent()).toBeFalse();
+  }));
   it('keeps recipient data when the active tab is clicked', (): void => {
     component.header.patchValue({ customerName: 'Manual recipient', customerAddress: 'Manual address' });
     component.setMode('EXISTING');

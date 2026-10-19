@@ -34,6 +34,7 @@ export class QuotationFormPageComponent implements OnInit {
  readonly selectedProduct = signal<ValueParams | null>(null); readonly editingLine = signal<number | null>(null);
  readonly lines = signal<QuotationLineInput[]>([]);
  readonly discountTypes = DiscountType;
+  readonly documentTypes = CheckoutDocumentType;
  readonly missingFields = customerMissingFields;
  readonly customerModal = viewChild(CustomerFormModalComponent); readonly confirmation = viewChild(ConfirmActionModalComponent); readonly itemDialog = viewChild<ElementRef<HTMLDialogElement>>('itemDialog');
  readonly header = this.fb.nonNullable.group({ saleType: CheckoutDocumentType.INVOICE, customerName: '', customerAddress: '', notes: '', discountType: this.fb.control<DiscountType | null>(null), discountValue: this.fb.control<number | null>(null, Validators.min(0)) });
