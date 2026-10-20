@@ -13,6 +13,7 @@
         <th>Costo total</th>
         <th>Fecha de creación</th>
         <th>Estado de la orden</th>
+        <th>Archivos adjuntos</th>
       </tr>
     </thead>
     <tbody>
@@ -40,6 +41,7 @@
             {{purchaseOrder.status | PurchaseOrderStatus }}
           </span>
         </td>
+        <td><span class="opacity-70">{{ purchaseOrder.document?.pdfKey ? (purchaseOrder.document?.jsonKey ? 'PDF + JSON' : 'PDF') : (purchaseOrder.document?.jsonKey ? 'JSON' : 'Sin adjuntos') }}</span></td>
 
       </tr>
       }

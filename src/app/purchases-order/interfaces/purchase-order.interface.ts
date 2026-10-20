@@ -10,8 +10,10 @@ export interface PurchaseOrder {
   sourceIdentity?: string | null;
   destinationWarehouse?: { id: number; name: string } | null;
   document?: {
-    source: string;
-    sourceSnapshot: Omit<PurchaseSourcePreview, 'providerMatch' | 'brands'> & {
+    pdfKey?: string | null;
+    jsonKey?: string | null;
+    source?: string;
+    sourceSnapshot?: Omit<PurchaseSourcePreview, 'providerMatch' | 'brands'> & {
       pdfConfirmed?: boolean;
     };
   } | null;
