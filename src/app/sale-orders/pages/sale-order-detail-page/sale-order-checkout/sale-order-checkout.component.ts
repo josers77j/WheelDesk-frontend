@@ -1,3 +1,4 @@
+import { CustomerMissingInfoComponent } from '../../../../customers/components/customer-missing-info/customer-missing-info.component';
 import { ProductEntryLayoutComponent } from '../../../../shared/components/product-entry-layout/product-entry-layout.component';
 import { ReviewChecklistComponent, ReviewItem } from '../../../../shared/components/review-checklist/review-checklist.component';
 import { PdfPreviewComponent } from '../../../../shared/components/pdf-preview/pdf-preview.component';
@@ -86,6 +87,7 @@ type CheckoutPaymentFormGroup = FormGroup<{
 @Component({
   selector: 'app-sale-order-checkout',
   imports: [
+    CustomerMissingInfoComponent,
     ProductEntryLayoutComponent,
     ReviewChecklistComponent,
     ReactiveFormsModule,

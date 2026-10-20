@@ -28,9 +28,7 @@
             {{customer.name}}
             @if (missingFields(customer); as missing) {
               @if (missing.length > 0) {
-                <div class="tooltip" [attr.data-tip]="'Faltan: ' + missing.join(', ')">
-                  <span class="icon-[tabler--alert-triangle] text-warning text-lg"></span>
-                </div>
+                <app-customer-missing-info [fields]="missing" />
               }
             }
           </span>

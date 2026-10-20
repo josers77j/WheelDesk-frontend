@@ -1,3 +1,4 @@
+import { CustomerMissingInfoComponent } from '../customer-missing-info/customer-missing-info.component';
 import { CustomerService } from '../../services/customer.service';
 import { Component, inject, input, signal } from '@angular/core';
 import { Customer } from '../../interfaces/customer.interface';
@@ -8,7 +9,7 @@ import { customerMissingFields } from '../../utils/customer-missing-fields.util'
 
 @Component({
   selector: 'app-customer-table',
-  imports: [TaxPayerPipe, CustomerTypePipe, SkeletonComponent],
+  imports: [CustomerMissingInfoComponent, TaxPayerPipe, CustomerTypePipe, SkeletonComponent],
   templateUrl: './customer-table.component.html',
 })
 export class CustomerTableComponent {

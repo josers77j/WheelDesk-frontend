@@ -33,10 +33,7 @@
                           </div>
                           @if (missingFields(client); as missing) {
                             @if (missing.length > 0) {
-                              <div class="tooltip shrink-0 mt-1"
-                                [attr.data-tip]="'Faltan: ' + missing.join(', ')">
-                                <span class="icon-[tabler--alert-triangle] text-warning text-lg"></span>
-                              </div>
+                              <app-customer-missing-info [fields]="missing" class="shrink-0 mt-1" />
                             }
                           }
                         </div>

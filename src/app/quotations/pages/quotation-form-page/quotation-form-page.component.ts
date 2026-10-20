@@ -1,3 +1,4 @@
+import { CustomerMissingInfoComponent } from '../../../customers/components/customer-missing-info/customer-missing-info.component';
 import { ProductEntryLayoutComponent } from '../../../shared/components/product-entry-layout/product-entry-layout.component';
 import { ReviewChecklistComponent, ReviewItem } from '../../../shared/components/review-checklist/review-checklist.component';
 import { CurrencyPipe } from '@angular/common';
@@ -22,7 +23,7 @@ import { CheckoutDocumentType, DiscountType } from '../../../sale-orders/interfa
 import { QuotationLineInput, QuotationWrite } from '../../interfaces/quotation.interface';
 import { QuotationService } from '../../services/quotation.service';
 
-@Component({ selector: 'app-quotation-form-page', imports: [ProductEntryLayoutComponent, ReviewChecklistComponent, CurrencyPipe, RouterLink, ReactiveFormsModule, ComboboxFormControlComponent, CustomerFormModalComponent, ConfirmActionModalComponent, AlertComponent, QueryErrorComponent], templateUrl: './quotation-form-page.component.html' })
+@Component({ selector: 'app-quotation-form-page', imports: [CustomerMissingInfoComponent, ProductEntryLayoutComponent, ReviewChecklistComponent, CurrencyPipe, RouterLink, ReactiveFormsModule, ComboboxFormControlComponent, CustomerFormModalComponent, ConfirmActionModalComponent, AlertComponent, QueryErrorComponent], templateUrl: './quotation-form-page.component.html' })
 export class QuotationFormPageComponent implements OnInit {
  private readonly route = inject(ActivatedRoute); private readonly router = inject(Router); private readonly service = inject(QuotationService); private readonly customers = inject(CustomerService); private readonly products = inject(ProductService); private readonly alerts = inject(AlertService); private readonly cache = inject(QueryClient); private readonly fb = inject(FormBuilder);
  readonly id = Number(this.route.snapshot.paramMap.get('id') ?? 0);
