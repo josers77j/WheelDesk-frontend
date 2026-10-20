@@ -30,7 +30,7 @@
   .filter-panel [filterActions] { flex-direction: column; }
   .filter-panel [filterActions] .btn { width: 100%; }
   .filter-panel .filter-panel-main:not(.filter-panel-no-search) { grid-template-columns: minmax(0, 1fr); }
-  .filter-panel .filter-panel-main > .btn { justify-self: end; }
+  .filter-panel .filter-panel-main > .filter-panel-toggle { justify-self: end; }
 }
 
 .filter-panel app-date-range .label-text { display: block; font-size: 12px; opacity: 0.7; }

@@ -5,11 +5,13 @@
       @else { <h2 class="font-semibold">{{ heading() }}</h2> }
     </div>
     @if (hasAdditional()) {
+      <div class="filter-panel-toggle p-1">
       <button type="button" class="btn btn-outline shrink-0" [attr.aria-expanded]="expanded()" (click)="expandedChange.emit(!expanded())">
         <span class="icon-[tabler--adjustments-horizontal] text-lg" aria-hidden="true"></span>
         Filtros
         <span class="icon-[tabler--chevron-down] text-lg transition-transform duration-250 motion-reduce:transition-none" [class.rotate-180]="expanded()" aria-hidden="true"></span>
       </button>
+      </div>
     }
   </div>
   <div class="filter-panel-expansion" [class.filter-panel-expanded]="expanded()"
