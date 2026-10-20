@@ -1,9 +1,34 @@
 <dialog #dialog class="modal" (cancel)="$event.preventDefault(); close()">
   <section class="modal-box bg-base-100 border border-base-content/20 w-11/12 max-w-2xl max-h-[88dvh] overflow-auto">
-    <header class="flex items-start justify-between gap-3"><div><h2 class="font-semibold text-xl">{{ bulk() ? 'Descargar documentos de compras' : 'Documentos originales de compra' }}</h2><p class="text-sm text-base-content/60 mt-1">{{ bulk() ? ids().length + ' compras seleccionadas · ZIP sin Excel' : 'Visualización, descarga y envío de PDF o JSON adjuntos.' }}</p></div><button type="button" class="btn btn-ghost btn-sm btn-circle" aria-label="Cerrar documentos" [disabled]="!!busy()" (click)="close()">✕</button></header>
+    <header class="flex items-start justify-between gap-3"><div><h2 class="font-semibold text-xl">{{ bulk() ? (emailMode() ? 'Enviar documentos de compras' : 'Descargar documentos de compras') : 'Documentos originales de compra' }}</h2><p class="text-sm text-base-content/60 mt-1">{{ bulk() ? ids().length + ' compras seleccionadas · ZIP sin Excel' : 'Visualización, descarga y envío de PDF o JSON adjuntos.' }}</p></div><button type="button" class="btn btn-ghost btn-sm btn-circle" aria-label="Cerrar documentos" [disabled]="!!busy()" (click)="close()">✕</button></header>
     @if (busy() === 'loading') { <p class="py-6" role="status"><span class="loading loading-spinner loading-sm"></span>Consultando documentos…</p> }
     @else {
-      @if (!available().pdf && !available().json) { <div class="alert mt-5">Esta compra no tiene documentos originales disponibles.</div> }
+      @if (bulk()) {
+        <section class="mt-5" aria-label="Compras seleccionadas">
+          <h3 class="font-semibold">Revisión de compras</h3>
+          <p class="text-sm text-base-content/60 mt-1">La selección se conserva entre búsquedas. Se pueden quitar compras y revisar sus archivos antes de continuar.</p>
+          <div class="space-y-3 mt-3">
+            @for (row of rows(); track row.id) {
+              <article class="border border-base-content/20 rounded-box p-3 min-w-0">
+                <div class="flex items-start gap-3">
+                  <input type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-1 shrink-0" [checked]="true" [disabled]="!!busy()" [attr.aria-label]="'Incluir compra ' + row.documentNumber" (change)="removePurchase(row.id)" />
+                  <div class="min-w-0 flex-1">
+                    <p class="font-semibold break-words">Compra #{{ row.documentNumber }} · {{ row.provider }}</p>
+                    <p class="text-xs text-base-content/60 break-all mt-1">{{ invoiceIdentity(row.sourceIdentity) || 'Sin código de factura' }}</p>
+                    @if (row.createdAt) { <p class="text-xs text-base-content/60 mt-1">{{ row.createdAt | date:'dd/MM/yyyy':'America/El_Salvador' }}</p> }
+                    <div class="flex flex-wrap gap-2 mt-3">
+                      <button type="button" class="btn btn-sm" [disabled]="!!busy() || !row.pdf" (click)="preview('pdf', row.id)"><span class="icon-[tabler--eye]"></span>Ver PDF</button>
+                      <button type="button" class="btn btn-sm" [disabled]="!!busy() || !row.json" (click)="preview('json', row.id)"><span class="icon-[tabler--eye]"></span>Ver JSON</button>
+                    </div>
+                    @if (!row.pdf || !row.json) { <p class="text-xs text-base-content/60 mt-2">Sin adjunto: {{ !row.pdf && !row.json ? 'PDF y JSON' : (!row.pdf ? 'PDF' : 'JSON') }}.</p> }
+                  </div>
+                </div>
+              </article>
+            } @empty { <p class="text-sm py-3" role="status">No hay compras seleccionadas.</p> }
+          </div>
+        </section>
+      }
+      @if (!available().pdf && !available().json) { <div class="alert mt-5">{{ bulk() ? 'Las compras seleccionadas no tienen documentos originales disponibles.' : 'Esta compra no tiene documentos originales disponibles.' }}</div> }
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
         @for (format of ['pdf', 'json']; track format) {
           @if (format === 'pdf' || format === 'json') {
@@ -14,8 +39,8 @@
         }
       </div>
       <p class="text-xs text-base-content/60 mt-3">El ZIP organiza los originales en una carpeta por compra. Si falta un archivo solicitado, incluye un listado de documentos no disponibles.</p>
-      <button type="button" class="btn btn-primary mt-4 w-full sm:w-auto" [disabled]="!!busy() || !formats().length" (click)="downloadZip()">@if (busy() === 'zip') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--file-zip]"></span>Descargar ZIP</button>
-      @if (!bulk()) { <section class="border-t border-base-content/15 mt-6 pt-4"><h3 class="font-semibold">Enviar por correo</h3><p class="text-sm text-base-content/60 mt-1">Se enviarán únicamente los formatos seleccionados al destinatario indicado.</p><label class="fieldset mt-3"><span class="fieldset-legend">Correo del destinatario *</span><input type="email" class="input w-full" [formControl]="recipient" [readOnly]="!!busy()" maxlength="254" placeholder="destinatario@ejemplo.com" [class.input-error]="recipient.touched && recipient.invalid" /></label>@if (recipient.touched && recipient.invalid) { <p class="text-error text-xs" role="alert">Ingrese un correo válido.</p> }<button type="button" class="btn btn-primary mt-3 w-full sm:w-auto" [disabled]="!!busy() || recipient.invalid || !formats().length" (click)="sendEmail()">@if (busy() === 'email') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--mail]"></span>Enviar documentos</button></section> }
+      @if (!emailMode()) { <button type="button" class="btn btn-primary mt-4 w-full sm:w-auto" [disabled]="!!busy() || !ids().length || !formats().length" (click)="downloadZip()">@if (busy() === 'zip') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--file-zip]"></span>Descargar ZIP</button> }
+      @if (!bulk() || emailMode()) { <section class="border-t border-base-content/15 mt-6 pt-4"><h3 class="font-semibold">Enviar por correo</h3><p class="text-sm text-base-content/60 mt-1">{{ bulk() ? 'Se enviará un ZIP con los formatos seleccionados al correo indicado.' : 'Se enviarán únicamente los formatos seleccionados al destinatario indicado.' }}</p><label class="fieldset mt-3"><span class="fieldset-legend">Correo del destinatario *</span><input type="email" class="input w-full" [formControl]="recipient" [readOnly]="!!busy()" maxlength="254" placeholder="destinatario@ejemplo.com" [class.input-error]="recipient.touched && recipient.invalid" /></label>@if (recipient.touched && recipient.invalid) { <p class="text-error text-xs" role="alert">Ingrese un correo válido.</p> }<button type="button" class="btn btn-primary mt-3 w-full sm:w-auto" [disabled]="!!busy() || !ids().length || recipient.invalid || !formats().length" (click)="sendEmail()">@if (busy() === 'email') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--mail]"></span>Enviar documentos</button></section> }
     }
     @if (busy() && busy() !== 'loading') { <p role="status" class="text-sm mt-4"><span class="loading loading-spinner loading-xs"></span>Procesando solicitud…</p> }
   </section>

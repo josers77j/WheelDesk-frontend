@@ -67,7 +67,7 @@ export class PurchaseOrderService {
         params: {
           from: from ?? '',
           to: to ?? '',
-          documentNumber: documentNumber!,
+          documentNumber: documentNumber?.trim() ?? '',
           status: status ?? '',
           providerId: providerId ?? '',
           limit,

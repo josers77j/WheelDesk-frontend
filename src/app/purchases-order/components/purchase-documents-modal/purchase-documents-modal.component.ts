@@ -1,13 +1,15 @@
-import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { purchaseInvoiceIdentity } from '../../utils/purchase-invoice-identity';
+import { Component, DestroyRef, ElementRef, inject, output, signal, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AlertService } from '../../../shared/components/alert/alert.service';
 import { PdfPreviewComponent } from '../../../shared/components/pdf-preview/pdf-preview.component';
-import { PurchaseDocumentFormat, PurchaseDocumentsService } from '../../services/purchase-documents.service';
+import { PurchaseDocumentFormat, PurchaseDocumentSelection, PurchaseDocumentsService } from '../../services/purchase-documents.service';
 
-@Component({ selector: 'app-purchase-documents-modal', imports: [ReactiveFormsModule, PdfPreviewComponent], templateUrl: './purchase-documents-modal.component.html' })
+@Component({ selector: 'app-purchase-documents-modal', imports: [ReactiveFormsModule, PdfPreviewComponent, DatePipe], templateUrl: './purchase-documents-modal.component.html' })
 export class PurchaseDocumentsModalComponent {
   private readonly api = inject(PurchaseDocumentsService);
   private readonly alerts = inject(AlertService);
@@ -15,11 +17,15 @@ export class PurchaseDocumentsModalComponent {
   private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>('dialog');
   private readonly jsonDialog = viewChild<ElementRef<HTMLDialogElement>>('jsonDialog');
   private readonly pdfViewer = viewChild(PdfPreviewComponent);
-  private readonly files = new Map<PurchaseDocumentFormat, { blob: Blob; filename: string }>();
+  private readonly files = new Map<string, { blob: Blob; filename: string }>();
   private revision = 0;
   private destroyed = false;
   readonly ids = signal<number[]>([]);
   readonly bulk = signal(false);
+  readonly emailMode = signal(false);
+  readonly rows = signal<PurchaseDocumentSelection[]>([]);
+  readonly selectionChange = output<number[]>();
+  readonly invoiceIdentity = purchaseInvoiceIdentity;
   readonly busy = signal('');
   readonly available = signal({ pdf: false, json: false });
   readonly selected = signal({ pdf: false, json: false });
@@ -43,31 +49,65 @@ export class PurchaseDocumentsModalComponent {
     } catch (error: unknown) { if (!this.destroyed) this.alerts.showError(await this.errorMessage(error)); }
     finally { if (!this.destroyed) this.busy.set(''); }
   }
-  openZip(ids: number[]): void {
+  openZip(ids: number[]): Promise<void> { return this.openSelection(ids, false); }
+  openEmail(ids: number[]): Promise<void> { return this.openSelection(ids, true); }
+  private async openSelection(ids: number[], email: boolean): Promise<void> {
     if (this.busy() || !ids.length) return;
-    this.reset([...ids], true); this.available.set({ pdf: true, json: true }); this.selected.set({ pdf: true, json: true });
+    if (ids.length > 20) { this.alerts.showError('Seleccione como máximo 20 compras por operación.'); return; }
+    this.reset([...new Set(ids)], true);
+    this.emailMode.set(email);
+    this.busy.set('loading');
+    const revision = this.revision;
+    try {
+      const result = await firstValueFrom(this.api.selection(this.ids()).pipe(takeUntilDestroyed(this.destroyRef)));
+      if (revision !== this.revision || this.destroyed) return;
+      const byId = new Map(result.map(row => [row.id, row]));
+      this.rows.set(this.ids().map(id => byId.get(id) ?? {
+        id, documentNumber: id, sourceIdentity: null, provider: 'Compra no disponible',
+        createdAt: null, pdf: false, json: false,
+      }));
+      this.updateAvailability();
+      this.selected.set(this.available());
+    } catch (error: unknown) { if (!this.destroyed) this.alerts.showError(await this.errorMessage(error)); }
+    finally { if (!this.destroyed) this.busy.set(''); }
+  }
+  removePurchase(id: number): void {
+    if (this.busy()) return;
+    this.ids.update(ids => ids.filter(value => value !== id));
+    this.rows.update(rows => rows.filter(row => row.id !== id));
+    for (const key of this.files.keys()) if (key.startsWith(id + ':')) this.files.delete(key);
+    this.updateAvailability();
+    this.selected.update(selected => ({ pdf: selected.pdf && this.available().pdf, json: selected.json && this.available().json }));
+    this.selectionChange.emit(this.ids());
+  }
+  private updateAvailability(): void {
+    this.available.set({ pdf: this.rows().some(row => row.pdf), json: this.rows().some(row => row.json) });
+  }
+  hasFile(format: PurchaseDocumentFormat, id: number): boolean {
+    return this.bulk() ? !!this.rows().find(row => row.id === id)?.[format] : this.available()[format];
   }
   private reset(ids: number[], bulk: boolean): void {
     this.revision++; this.files.clear(); this.ids.set(ids); this.bulk.set(bulk);
-    this.recipient.reset(); this.jsonText.set(''); this.available.set({ pdf: false, json: false }); this.selected.set({ pdf: false, json: false });
+    this.rows.set([]); this.emailMode.set(false); this.recipient.reset(); this.jsonText.set(''); this.available.set({ pdf: false, json: false }); this.selected.set({ pdf: false, json: false });
     this.dialog()?.nativeElement.showModal();
   }
   close(): void { if (!this.busy()) { this.revision++; this.files.clear(); this.dialog()?.nativeElement.close(); } }
-  private async file(format: PurchaseDocumentFormat): Promise<{ blob: Blob; filename: string }> {
-    const cached = this.files.get(format);
+  private async file(format: PurchaseDocumentFormat, id: number): Promise<{ blob: Blob; filename: string }> {
+    const key = id + ':' + format;
+    const cached = this.files.get(key);
     if (cached) return cached;
-    const response = await firstValueFrom(this.api.file(this.ids()[0], format).pipe(takeUntilDestroyed(this.destroyRef)));
+    const response = await firstValueFrom(this.api.file(id, format).pipe(takeUntilDestroyed(this.destroyRef)));
     if (!response.body) throw new Error('El documento original está vacío.');
-    let filename = `compra-${this.ids()[0]}.${format}`;
+    let filename = `compra-${id}.${format}`;
     const disposition = response.headers.get('Content-Disposition') || '';
     const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
     try { filename = encoded ? decodeURIComponent(encoded) : /filename="([^"]+)"/i.exec(disposition)?.[1] || filename; } catch { /* Keep the safe fallback name. */ }
-    const file = { blob: response.body, filename }; this.files.set(format, file); return file;
+    const file = { blob: response.body, filename }; this.files.set(key, file); return file;
   }
-  async preview(format: PurchaseDocumentFormat): Promise<void> {
-    if (this.busy() || !this.available()[format]) return;
+  async preview(format: PurchaseDocumentFormat, id: number = this.ids()[0]): Promise<void> {
+    if (this.busy() || !this.hasFile(format, id)) return;
     await this.run(`preview-${format}`, async () => {
-      const file = await this.file(format);
+      const file = await this.file(format, id);
       if (this.destroyed) return;
       if (format === 'pdf') await this.pdfViewer()?.open(file.blob, file.filename);
       else { const value: unknown = JSON.parse(await file.blob.text()); this.jsonText.set(JSON.stringify(value, null, 2)); this.jsonDialog()?.nativeElement.showModal(); }
@@ -75,17 +115,21 @@ export class PurchaseDocumentsModalComponent {
   }
   async download(format: PurchaseDocumentFormat): Promise<void> {
     if (this.busy() || !this.available()[format]) return;
-    await this.run(`download-${format}`, async () => { const file = await this.file(format); if (!this.destroyed) this.saveBlob(file.blob, file.filename); });
+    await this.run(`download-${format}`, async () => { const file = await this.file(format, this.ids()[0]); if (!this.destroyed) this.saveBlob(file.blob, file.filename); });
   }
   async downloadZip(): Promise<void> {
-    if (this.busy() || !this.formats().length) return;
+    if (this.busy() || !this.ids().length || !this.formats().length) return;
     await this.run('zip', async () => { const blob = await firstValueFrom(this.api.zip(this.ids(), this.formats()).pipe(takeUntilDestroyed(this.destroyRef))); if (!this.destroyed) this.saveBlob(blob, 'documentos-compras.zip'); });
   }
   async sendEmail(): Promise<void> {
+    this.recipient.setValue(this.recipient.value.trim());
     this.recipient.markAsTouched();
-    if (this.busy() || this.bulk() || this.recipient.invalid || !this.formats().length) return;
+    if (this.busy() || !this.ids().length || this.recipient.invalid || !this.formats().length) return;
     await this.run('email', async () => {
-      await firstValueFrom(this.api.email(this.ids()[0], this.recipient.value.trim(), this.formats()).pipe(takeUntilDestroyed(this.destroyRef)));
+      const request = this.bulk()
+        ? this.api.emailSelection(this.ids(), this.recipient.value, this.formats())
+        : this.api.email(this.ids()[0], this.recipient.value, this.formats());
+      await firstValueFrom(request.pipe(takeUntilDestroyed(this.destroyRef)));
       if (!this.destroyed) this.alerts.showSuccess('Los documentos se enviaron al correo indicado.');
     });
   }

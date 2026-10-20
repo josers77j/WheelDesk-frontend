@@ -70,13 +70,12 @@ export class PurchaseOrdersPageComponent {
   toggleDocumentSelection(id: number): void {
     const current = this.documentSelection();
     if (current.includes(id)) this.documentSelection.set(current.filter(value => value !== id));
-    else if (current.length >= 20) this.alertService.showWarning('Seleccione como máximo 20 compras por descarga.');
+    else if (current.length >= 20) this.alertService.showWarning('Seleccione como máximo 20 compras por operación.');
     else this.documentSelection.set([...current, id]);
   }
-  private readonly resetDocumentSelection = effect(() => {
-    this.paginationService.currentPage(); this.appliedSearchParams(); this.limitPerPage();
-    this.documentSelection.set([]);
-  });
+  updateDocumentSelection(ids: number[]): void {
+    this.documentSelection.set([...ids]);
+  }
   route = inject(Router);
   activatedRoute = inject(ActivatedRoute);
   queryClient = inject(QueryClient);
@@ -310,7 +309,7 @@ export class PurchaseOrdersPageComponent {
   // Search param variables
   onSearch(): void {
     if (this.purchaseOrderQuery.isFetching()) return;
-    const params = this.formSearchParams();
+    const params = { ...this.formSearchParams(), documentNumber: this.formSearchParams().documentNumber?.trim() ?? '' };
     this.searchNonce.update((n) => n + 1);
     this.setSearchParamInUrl(params);
     this.appliedSearchParams.set(params);

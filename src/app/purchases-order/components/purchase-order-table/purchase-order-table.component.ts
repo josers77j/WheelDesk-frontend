@@ -1,3 +1,4 @@
+import { purchaseInvoiceIdentity } from '../../utils/purchase-invoice-identity';
 import { Component, inject, input, output, signal } from '@angular/core';
 import { PurchaseOrder } from '../../interfaces/purchase-order.interface';
 
@@ -20,6 +21,7 @@ import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.
   templateUrl: './purchase-order-table.component.html',
 })
 export class PurchaseOrderTableComponent {
+  readonly invoiceIdentity = purchaseInvoiceIdentity;
   purchaseOrder = input<PurchaseOrder[]>();
   checkedIds = input<readonly number[]>([]);
   checkedChange = output<number>();

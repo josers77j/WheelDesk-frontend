@@ -7,7 +7,7 @@
 
 <!-- Card: filtros -->
 <app-filter-panel [hasAdditional]="true" [expanded]="isOpen()" (expandedChange)="isOpen.set($event)" heading="Consultar registros">
-<div filterSearch><div class="filter-label"><span>Número de orden</span><label class="input w-full">
+<div filterSearch><div class="filter-label"><span>Número de orden o código de factura</span><label class="input w-full">
     <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
       <g
         stroke-linejoin="round"
@@ -19,7 +19,7 @@
         <path d="m21 21-4.3-4.3"></path>
       </g>
     </svg>
-    <input #txtDocumentNumber type="text" placeholder="Buscar por número de orden"
+    <input #txtDocumentNumber type="text" maxlength="200" placeholder="Número de orden o código de generación"
       (input)="setDocumentNumber(txtDocumentNumber.value)" [value]="this.formSearchParams().documentNumber ?? ''" />
     @if ((this.formSearchParams().documentNumber ?? '') !== '') {
       <button
@@ -81,7 +81,8 @@
 
   @if(purchaseOrderQuery.data(); as data){
   <div class="flex flex-wrap items-center gap-3 mb-3">
-    <button type="button" class="btn btn-sm" [disabled]="!documentSelection().length" (click)="documentsModal()?.openZip(documentSelection())"><span class="icon-[tabler--file-zip]"></span>Descargar documentos seleccionados ({{ documentSelection().length }})</button>
+    <button type="button" class="btn btn-sm" [disabled]="!documentSelection().length" (click)="documentsModal()?.openZip(documentSelection())"><span class="icon-[tabler--file-zip]"></span>Descargar documentos ({{ documentSelection().length }})</button>
+    <button type="button" class="btn btn-sm" [disabled]="!documentSelection().length" (click)="documentsModal()?.openEmail(documentSelection())"><span class="icon-[tabler--mail]"></span>Enviar por correo</button>
     @if (documentSelection().length) { <button type="button" class="btn btn-sm btn-ghost" (click)="documentSelection.set([])">Limpiar selección</button> }
   </div>
   <app-purchase-order-table [checkedIds]="documentSelection()" (checkedChange)="toggleDocumentSelection($event)"
@@ -173,4 +174,4 @@
 
 <app-alert />
 
-<app-purchase-documents-modal />
+<app-purchase-documents-modal (selectionChange)="updateDocumentSelection($event)" />

@@ -8,6 +8,7 @@
         <th><span class="sr-only">Seleccionar documentos</span></th>
         <th>#</th>
         <th>documento</th>
+        <th>Código de generación / control</th>
         <th>Proveedor</th>
         <th>Costo total</th>
         <th>Fecha de creación</th>
@@ -26,6 +27,7 @@
         <td (click)="$event.stopPropagation()"><input type="checkbox" class="checkbox checkbox-sm checkbox-primary" [checked]="checkedIds().includes(purchaseOrder.id)" [attr.aria-label]="'Seleccionar compra ' + purchaseOrder.documentNumber" (change)="toggleChecked(purchaseOrder.id, $event)" /></td>
         <td class="font-medium">{{ rowOffset() + $index + 1 }}</td>
         <td>{{purchaseOrder.documentNumber | CorrelativeParse}} </td>
+        <td class="max-w-xs break-all whitespace-normal">{{ invoiceIdentity(purchaseOrder.sourceIdentity) || '—' }}</td>
         <td>{{purchaseOrder.provider.name}}</td>
         <td>{{purchaseOrder.total | currency}}</td>
         <td>{{purchaseOrder.createdAt | date:'longDate':'America/El_Salvador'}}</td>
