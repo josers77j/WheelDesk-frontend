@@ -25,7 +25,13 @@ describe('Synchronous migration import', (): void => {
     ] });
     TestBed.overrideComponent(MigrationPageComponent, { set: { template: '', imports: [] } });
   });
-  async function settle(): Promise<void> { for (let index = 0; index < 12; index++) await new Promise<void>(resolve => setTimeout(resolve, 0)); }
+  async function waitForPreview(component: MigrationPageComponent): Promise<void> {
+    const deadline = Date.now() + 2000;
+    while (component.previewing()) {
+      if (Date.now() >= deadline) throw new Error('Migration preview did not finish');
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+    }
+  }
   function selectFile(component: MigrationPageComponent): void {
     const input = document.createElement('input');
     const transfer = new DataTransfer();
@@ -38,7 +44,7 @@ describe('Synchronous migration import', (): void => {
   it('uses the final response and preserves per-file errors and orphan PDFs', async (): Promise<void> => {
     const fixture = TestBed.createComponent(MigrationPageComponent);
     const component = fixture.componentInstance;
-    selectFile(component); await settle(); await component.startImport();
+    selectFile(component); await waitForPreview(component); await component.startImport();
     expect(component.importing()).toBeFalse();
     expect(component.importSummary()).toEqual(result.summary);
     expect(component.importErrors().map(error => error.filename)).toEqual(['invalid.json', 'orphan.pdf']);
@@ -48,7 +54,7 @@ describe('Synchronous migration import', (): void => {
   it('does not submit a second batch while the request is pending', async (): Promise<void> => {
     service.import.and.returnValue(new Promise<MigrationImportResult>(() => undefined));
     const fixture = TestBed.createComponent(MigrationPageComponent);
-    selectFile(fixture.componentInstance); await settle();
+    selectFile(fixture.componentInstance); await waitForPreview(fixture.componentInstance);
     fixture.componentInstance.startImport(); fixture.componentInstance.startImport();
     expect(service.import).toHaveBeenCalledTimes(1);
     expect(fixture.componentInstance.importing()).toBeTrue(); fixture.destroy();
@@ -57,18 +63,28 @@ describe('Synchronous migration import', (): void => {
     let complete: ((value: MigrationImportResult) => void) | undefined;
     service.import.and.returnValue(new Promise<MigrationImportResult>(resolve => { complete = resolve; }));
     const fixture = TestBed.createComponent(MigrationPageComponent);
-    selectFile(fixture.componentInstance); await settle(); fixture.componentInstance.startImport(); fixture.destroy();
-    complete?.(result); await settle();
+    selectFile(fixture.componentInstance); await waitForPreview(fixture.componentInstance);
+    const pendingImport = fixture.componentInstance.startImport(); fixture.destroy();
+    complete?.(result); await pendingImport;
     expect(alerts.showSuccess).not.toHaveBeenCalled();
   });
   function selectMany(component: MigrationPageComponent, count: number): void {
     const transfer = new DataTransfer();
-    for (let index = 0; index < count; index++) transfer.items.add(new File(['{}'], `invoice-${index}.json`));
+    for (let index = 0; index < count; index++) {
+      const file = new File(['{}'], `invoice-${index}.json`);
+      // Keep the first read pending long enough to expose premature assertions.
+      if (index === 0) spyOn(file, 'text').and.callFake(() => new Promise<string>(resolve => setTimeout(() => resolve('{}'), 100)));
+      transfer.items.add(file);
+    }
     component.onDrop(new DragEvent('drop', { dataTransfer: transfer }));
   }
   it('continues later batches when a document fails and accumulates compact counters', async (): Promise<void> => {
     const fixture = TestBed.createComponent(MigrationPageComponent);
-    selectMany(fixture.componentInstance, 11); await settle();
+    selectMany(fixture.componentInstance, 11);
+    expect(fixture.componentInstance.previewing()).toBeTrue();
+    await fixture.componentInstance.startImport();
+    expect(service.import).not.toHaveBeenCalled();
+    await waitForPreview(fixture.componentInstance);
     expect(service.preview).toHaveBeenCalledTimes(2);
     await fixture.componentInstance.startImport();
     expect(service.import).toHaveBeenCalledTimes(2);
@@ -78,8 +94,11 @@ describe('Synchronous migration import', (): void => {
   });
   it('stops on an unknown transport outcome and retries only pending batches', async (): Promise<void> => {
     const fixture = TestBed.createComponent(MigrationPageComponent);
-    selectMany(fixture.componentInstance, 21); await settle();
-    service.import.and.returnValues(Promise.resolve(result), Promise.reject(new Error('network')));
+    selectMany(fixture.componentInstance, 21); await waitForPreview(fixture.componentInstance);
+    service.import.and.callFake(async (): Promise<MigrationImportResult> => {
+      if (service.import.calls.count() === 2) throw new Error('network');
+      return result;
+    });
     await fixture.componentInstance.startImport();
     expect(service.import).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.completedBatches()).toBe(1);
@@ -94,7 +113,7 @@ describe('Synchronous migration import', (): void => {
   it('does not submit documents after removing the entire selection', async (): Promise<void> => {
     const fixture = TestBed.createComponent(MigrationPageComponent);
     const component = fixture.componentInstance;
-    selectFile(component); await settle();
+    selectFile(component); await waitForPreview(component);
     component.toggleSelect('invoice.json');
     component.removeSelected();
     await component.startImport();
