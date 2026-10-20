@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { purchaseInvoiceIdentity } from '../../utils/purchase-invoice-identity';
-import { Component, DestroyRef, ElementRef, inject, output, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -15,6 +15,7 @@ export class PurchaseDocumentsModalComponent {
   private readonly alerts = inject(AlertService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = viewChild<ElementRef<HTMLDialogElement>>('dialog');
+  private readonly reviewList = viewChild<ElementRef<HTMLElement>>('reviewList');
   private readonly jsonDialog = viewChild<ElementRef<HTMLDialogElement>>('jsonDialog');
   private readonly pdfViewer = viewChild(PdfPreviewComponent);
   private readonly files = new Map<string, { blob: Blob; filename: string }>();
@@ -24,6 +25,9 @@ export class PurchaseDocumentsModalComponent {
   readonly bulk = signal(false);
   readonly emailMode = signal(false);
   readonly rows = signal<PurchaseDocumentSelection[]>([]);
+  readonly exportAttempted = signal(false);
+  readonly emptyPurchases = computed(() => this.bulk() ? this.rows().filter(row => !row.pdf && !row.json) : []);
+  readonly allPurchasesEmpty = computed(() => this.ids().length > 0 && this.emptyPurchases().length === this.ids().length);
   readonly selectionChange = output<number[]>();
   readonly invoiceIdentity = purchaseInvoiceIdentity;
   readonly busy = signal('');
@@ -88,7 +92,7 @@ export class PurchaseDocumentsModalComponent {
   }
   private reset(ids: number[], bulk: boolean): void {
     this.revision++; this.files.clear(); this.ids.set(ids); this.bulk.set(bulk);
-    this.rows.set([]); this.emailMode.set(false); this.recipient.reset(); this.jsonText.set(''); this.available.set({ pdf: false, json: false }); this.selected.set({ pdf: false, json: false });
+    this.exportAttempted.set(false); this.rows.set([]); this.emailMode.set(false); this.recipient.reset(); this.jsonText.set(''); this.available.set({ pdf: false, json: false }); this.selected.set({ pdf: false, json: false });
     this.dialog()?.nativeElement.showModal();
   }
   close(): void { if (!this.busy()) { this.revision++; this.files.clear(); this.dialog()?.nativeElement.close(); } }
@@ -117,14 +121,23 @@ export class PurchaseDocumentsModalComponent {
     if (this.busy() || !this.available()[format]) return;
     await this.run(`download-${format}`, async () => { const file = await this.file(format, this.ids()[0]); if (!this.destroyed) this.saveBlob(file.blob, file.filename); });
   }
+  private validateSelection(): boolean {
+    if (!this.emptyPurchases().length) return true;
+    this.exportAttempted.set(true);
+    this.reviewList()?.nativeElement.querySelector<HTMLElement>('[data-missing-documents="true"]')?.scrollIntoView({
+      block: 'center',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+    return false;
+  }
   async downloadZip(): Promise<void> {
-    if (this.busy() || !this.ids().length || !this.formats().length) return;
+    if (this.busy() || !this.ids().length || !this.validateSelection() || !this.formats().length) return;
     await this.run('zip', async () => { const blob = await firstValueFrom(this.api.zip(this.ids(), this.formats()).pipe(takeUntilDestroyed(this.destroyRef))); if (!this.destroyed) this.saveBlob(blob, 'documentos-compras.zip'); });
   }
   async sendEmail(): Promise<void> {
     this.recipient.setValue(this.recipient.value.trim());
     this.recipient.markAsTouched();
-    if (this.busy() || !this.ids().length || this.recipient.invalid || !this.formats().length) return;
+    if (this.busy() || !this.ids().length || this.recipient.invalid || !this.validateSelection() || !this.formats().length) return;
     await this.run('email', async () => {
       const request = this.bulk()
         ? this.api.emailSelection(this.ids(), this.recipient.value, this.formats())

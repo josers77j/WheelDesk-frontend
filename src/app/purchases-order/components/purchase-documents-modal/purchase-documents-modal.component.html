@@ -4,12 +4,18 @@
     @if (busy() === 'loading') { <p class="py-6" role="status"><span class="loading loading-spinner loading-sm"></span>Consultando documentos…</p> }
     @else {
       @if (bulk()) {
-        <section class="mt-5" aria-label="Compras seleccionadas">
+        <section #reviewList class="mt-5" aria-label="Compras seleccionadas">
           <h3 class="font-semibold">Revisión de compras</h3>
           <p class="text-sm text-base-content/60 mt-1">La selección se conserva entre búsquedas. Se pueden quitar compras y revisar sus archivos antes de continuar.</p>
+          @if (emptyPurchases().length) {
+            <div class="alert flex flex-col items-stretch gap-2 text-left mt-3" [class.alert-warning]="!exportAttempted()" [class.alert-error]="exportAttempted()" role="alert">
+              <div class="flex items-start gap-2 min-w-0"><span class="icon-[tabler--alert-triangle] shrink-0 mt-0.5" aria-hidden="true"></span><strong class="min-w-0 break-words">{{ allPurchasesEmpty() ? 'No hay elementos para descargar' : 'Compras sin documentos adjuntos' }}</strong></div>
+              <p class="break-words">{{ allPurchasesEmpty() ? 'Ninguna de las compras seleccionadas tiene PDF ni JSON. Se debe cambiar la selección.' : 'Se deben quitar de la selección las compras sin PDF ni JSON para continuar.' }}</p>
+            </div>
+          }
           <div class="space-y-3 mt-3">
             @for (row of rows(); track row.id) {
-              <article class="border border-base-content/20 rounded-box p-3 min-w-0">
+              <article class="border rounded-box p-3 min-w-0" [class]="exportAttempted() && !row.pdf && !row.json ? 'border-error' : 'border-base-content/20'" [attr.data-purchase-id]="row.id" [attr.data-missing-documents]="!row.pdf && !row.json ? 'true' : null">
                 <div class="flex items-start gap-3">
                   <input type="checkbox" class="checkbox checkbox-primary checkbox-sm mt-1 shrink-0" [checked]="true" [disabled]="!!busy()" [attr.aria-label]="'Incluir compra ' + row.documentNumber" (change)="removePurchase(row.id)" />
                   <div class="min-w-0 flex-1">
@@ -20,6 +26,7 @@
                       <button type="button" class="btn btn-sm" [disabled]="!!busy() || !row.pdf" (click)="preview('pdf', row.id)"><span class="icon-[tabler--eye]"></span>Ver PDF</button>
                       <button type="button" class="btn btn-sm" [disabled]="!!busy() || !row.json" (click)="preview('json', row.id)"><span class="icon-[tabler--eye]"></span>Ver JSON</button>
                     </div>
+                    @if (!row.pdf && !row.json) { <p class="text-sm mt-2" [class.text-error]="exportAttempted()" [class.text-warning]="!exportAttempted()">Esta compra no tiene documentos adjuntos. Se debe quitar de la selección para continuar.</p> }
                     @if (!row.pdf || !row.json) { <p class="text-xs text-base-content/60 mt-2">Sin adjunto: {{ !row.pdf && !row.json ? 'PDF y JSON' : (!row.pdf ? 'PDF' : 'JSON') }}.</p> }
                   </div>
                 </div>
@@ -28,7 +35,7 @@
           </div>
         </section>
       }
-      @if (!available().pdf && !available().json) { <div class="alert mt-5">{{ bulk() ? 'Las compras seleccionadas no tienen documentos originales disponibles.' : 'Esta compra no tiene documentos originales disponibles.' }}</div> }
+      @if (!bulk() && !available().pdf && !available().json) { <div class="alert alert-warning mt-5" role="alert">No hay elementos para descargar. Esta compra no tiene documentos originales adjuntos.</div> }
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
         @for (format of ['pdf', 'json']; track format) {
           @if (format === 'pdf' || format === 'json') {
@@ -39,7 +46,7 @@
         }
       </div>
       <p class="text-xs text-base-content/60 mt-3">El ZIP organiza los originales en una carpeta por compra. Si falta un archivo solicitado, incluye un listado de documentos no disponibles.</p>
-      @if (!emailMode()) { <button type="button" class="btn btn-primary mt-4 w-full sm:w-auto" [disabled]="!!busy() || !ids().length || !formats().length" (click)="downloadZip()">@if (busy() === 'zip') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--file-zip]"></span>Descargar ZIP</button> }
+      @if (!emailMode()) { <button type="button" class="btn btn-primary mt-4 w-full sm:w-auto" [disabled]="!!busy() || !ids().length || !formats().length" data-testid="download-purchases-zip" (click)="downloadZip()">@if (busy() === 'zip') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--file-zip]"></span>Descargar ZIP</button> }
       @if (!bulk() || emailMode()) { <section class="border-t border-base-content/15 mt-6 pt-4"><h3 class="font-semibold">Enviar por correo</h3><p class="text-sm text-base-content/60 mt-1">{{ bulk() ? 'Se enviará un ZIP con los formatos seleccionados al correo indicado.' : 'Se enviarán únicamente los formatos seleccionados al destinatario indicado.' }}</p><label class="fieldset mt-3"><span class="fieldset-legend">Correo del destinatario *</span><input type="email" class="input w-full" [formControl]="recipient" [readOnly]="!!busy()" maxlength="254" placeholder="destinatario@ejemplo.com" [class.input-error]="recipient.touched && recipient.invalid" /></label>@if (recipient.touched && recipient.invalid) { <p class="text-error text-xs" role="alert">Ingrese un correo válido.</p> }<button type="button" class="btn btn-primary mt-3 w-full sm:w-auto" [disabled]="!!busy() || !ids().length || recipient.invalid || !formats().length" (click)="sendEmail()">@if (busy() === 'email') { <span class="loading loading-spinner loading-xs"></span> }<span class="icon-[tabler--mail]"></span>Enviar documentos</button></section> }
     }
     @if (busy() && busy() !== 'loading') { <p role="status" class="text-sm mt-4"><span class="loading loading-spinner loading-xs"></span>Procesando solicitud…</p> }
