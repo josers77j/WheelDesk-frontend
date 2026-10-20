@@ -1,7 +1,7 @@
 import { APP_BRANDING } from '../consts/branding.const';
 import { Injectable, computed, signal } from '@angular/core';
 
-export type AppTheme = 'corporate' | 'sunset';
+export type AppTheme = 'corporate' | 'business';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +10,7 @@ export class ThemeService {
   private readonly storageKey = 'app_theme';
 
   theme = signal<AppTheme>(this.getInitialTheme());
-  isDarkMode = computed(() => this.theme() === 'sunset');
+  isDarkMode = computed(() => this.theme() === 'business');
 
   readonly appName = APP_BRANDING.name;
   readonly logo = computed(() =>
@@ -26,16 +26,16 @@ export class ThemeService {
       const savedTheme = localStorage.getItem(
         this.storageKey,
       ) as AppTheme | null;
-      if (savedTheme === 'corporate' || savedTheme === 'sunset') {
+      if (savedTheme === 'corporate' || savedTheme === 'business') {
         return savedTheme;
       }
 
       // Check system preference
       if (
         typeof window !== 'undefined' &&
-        window.matchMedia?.('(prefers-color-scheme: sunset)').matches
+        window.matchMedia?.('(prefers-color-scheme: dark)').matches
       ) {
-        return 'sunset';
+        return 'business';
       }
     } catch {
       // Ignore localStorage access errors (e.g. incognito)
@@ -46,7 +46,7 @@ export class ThemeService {
 
   toggleTheme(): void {
     const nextTheme: AppTheme =
-      this.theme() === 'sunset' ? 'corporate' : 'sunset';
+      this.theme() === 'business' ? 'corporate' : 'business';
     this.setTheme(nextTheme);
   }
 

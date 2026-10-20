@@ -3,7 +3,7 @@
 @plugin "daisyui" {
   themes:
     corporate --default,
-    sunset --prefersdark;
+    business --prefersdark;
 }
 @plugin "@iconify/tailwind4";
 
@@ -48,42 +48,40 @@
   --noise: 0;
 }
 
-
 @plugin "daisyui/theme" {
-  name: "sunset";
+  name: "business";
   default: false;
   prefersdark: false;
   color-scheme: "dark";
-  --color-base-100: oklch(15% 0 0);
-  --color-base-200: oklch(20% 0 0);
-  --color-base-300: oklch(25% 0 0);
-  --color-base-content: oklch(83.7% 0.005 262.900);
-  --color-primary: oklch(70% 0.165 254.624);
-  --color-primary-content: oklch(14.94% 0.031 39.947);
-  --color-secondary: oklch(72.537% 0.177 2.72);
-  --color-secondary-content: oklch(14.507% 0.035 2.72);
-  --color-accent: oklch(71.294% 0.166 299.844);
-  --color-accent-content: oklch(14.258% 0.033 299.844);
-  --color-neutral: oklch(14% 0 0);
-  --color-neutral-content: oklch(70% 0.019 237.69);
-  --color-info: oklch(85.559% 0.085 206.015);
-  --color-info-content: oklch(17.111% 0.017 206.015);
-  --color-success: oklch(85.56% 0.085 144.778);
-  --color-success-content: oklch(17.112% 0.017 144.778);
-  --color-warning: oklch(85.569% 0.084 74.427);
-  --color-warning-content: oklch(17.113% 0.016 74.427);
-  --color-error: oklch(79.7% 0.200 21.647);
-  --color-error-content: oklch(0% 0.001 106.424);
+  --color-base-100: oklch(24.353% 0 0);
+  --color-base-200: oklch(22.648% 0 0);
+  --color-base-300: oklch(20.944% 0 0);
+  --color-base-content: oklch(84.87% 0 0);
+  --color-primary: oklch(41.703% 0.099 251.473);
+  --color-primary-content: oklch(88.34% 0.019 251.473);
+  --color-secondary: oklch(64.092% 0.027 229.389);
+  --color-secondary-content: oklch(12.818% 0.005 229.389);
+  --color-accent: oklch(67.271% 0.167 35.791);
+  --color-accent-content: oklch(13.454% 0.033 35.791);
+  --color-neutral: oklch(27.441% 0.013 253.041);
+  --color-neutral-content: oklch(85.488% 0.002 253.041);
+  --color-info: oklch(62.616% 0.143 240.033);
+  --color-info-content: oklch(12.523% 0.028 240.033);
+  --color-success: oklch(70.226% 0.094 156.596);
+  --color-success-content: oklch(14.045% 0.018 156.596);
+  --color-warning: oklch(77.482% 0.115 81.519);
+  --color-warning-content: oklch(15.496% 0.023 81.519);
+  --color-error: oklch(51.61% 0.146 29.674);
+  --color-error-content: oklch(90.322% 0.029 29.674);
   --radius-selector: 1rem;
   --radius-field: 0.5rem;
   --radius-box: 1rem;
-  --size-selector: 0.28125rem;
-  --size-field: 0.28125rem;
-  --border: 1.5px;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
   --depth: 0;
   --noise: 0;
 }
-
 
 @theme {
   --animate-fadeIn: fadeIn 0.5s ease-in-out;
@@ -125,7 +123,7 @@ button {
 [data-theme="corporate"] .menu li > button.bg-base-200 {
   color: oklch(13% 0.028 261.692);
 }
-[data-theme="sunset"] .menu li > button.bg-base-200 {
+[data-theme="business"] .menu li > button.bg-base-200 {
   background-color: var(--color-base-300);
   color: oklch(97% 0 0);
 }
@@ -140,7 +138,11 @@ button {
   color: var(--color-base-content);
 }
 
-[data-theme="sunset"] .table.table-zebra tbody tr.bg-base-300 > :where(th, td) {
+[data-theme="business"]
+  .table.table-zebra
+  tbody
+  tr.bg-base-300
+  > :where(th, td) {
   background-color: oklch(25.2% 0.11 237.69);
   color: var(--color-base-content);
 }
@@ -178,7 +180,7 @@ input.input[type="password"]::-webkit-caps-lock-indicator {
 }
 
 /* Match the purchase cards in the dark theme as well. */
-[data-theme="sunset"]
+[data-theme="business"]
   :is(
     .modal-box,
     .border-base-300,
